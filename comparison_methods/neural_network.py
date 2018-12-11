@@ -3,11 +3,14 @@
 Classification or Interpolation networks are defined in
 `classification.py` and `interpolation.py`, respectfully.
 
-Class implemented so that you caould be run in an `Eager`-ish 
-fashion. 
+Class implemented so that you caould be run in an `Eager`-ish
+fashion.
+
+TODO:
+    SAVE AND LOAD METHODS
 
 Next iterations:
-    - make function `add_conv_layer`, etc.
+    - Add convolution layer functionality
 '''
 
 import tensorflow as tf
@@ -19,7 +22,7 @@ import matplotlib.pyplot as plt
 
 import sys
 sys.path.append('..')
-from util import MLClass
+from util MLClass
 import constants
 import data_processing.metrics
 
@@ -38,7 +41,7 @@ class TFWrapper(MLClass):
     Default parameters are specified in constants.
     '''
 
-    def __init__(self, base_save_loc, classification = None,
+    def __init__(self, base_save_loc = None, classification = None,
         optimizer = None, cost_func = None, name = None):
         ''' Constructor. Defaults defined in constants
         -----------
@@ -58,6 +61,8 @@ class TFWrapper(MLClass):
             - valid inputs:
                 'MSE', 'RMSE', 'MAE'
         '''
+        if base_save_loc is None:
+            base_save_loc = constants.DEFAULT_NN_BASE_SAVE_LOC
         if classification is None:
             classification = constants.DEFAULT_NN_TYPE_CLASSIFICATION
         if optimizer is None:
@@ -68,11 +73,10 @@ class TFWrapper(MLClass):
             name = constants.DEFAULT_NN_NAME
 
         MLClass.__init__(self)
-
         self.base_save_loc = base_save_loc
         self.classification = classification
         self.optimizer = optimizer
-        self.cost_func = cost_func        
+        self.cost_func = cost_func
         self.built = False # set to True once `finished_building` is called
         self.layers = {}
         self.num_layers = 0
@@ -84,15 +88,9 @@ class TFWrapper(MLClass):
             os.makedirs(self.base_save_loc)
 
     def __str__(self):
-        s = 'name: {}\n'.format(self.name)
-        s += 'Classification?: {}\n'.format(self.classification)
-        s += 'num_layers: {}\n'.format(self.num_layers)
-
-        for i in range(len(self.layer_sizes)):
-            s += '\tlayer {} size {}\n'.format(i,self.layer_sizes[i])
-        s += 'trained? {}, built? {}\n'.format(self.trained, self.built)
-        s += 'base_save_loc: {}\n'.format(self.base_save_loc)
-        s += 'cost function: {}\n'.format(self.cost_func)
+        s = ''
+        for key,val in self.__dict__.items():
+            s += '{}: {}\n'.format(key,str(val))
         return s
 
     def add_dense_layer(self, size, activation = None, use_bias = None,
@@ -131,7 +129,7 @@ class TFWrapper(MLClass):
         # If this is the first layer, set as input_size
         if self.num_layers == 0:
             self.input_size = size
-            self.x = tf.placeholder('float', [None, size])
+            self.x = tf.placeholder('float', [None, size], name = 'x')
             self.prev_layer = self.x
 
         # Make the layer
@@ -141,7 +139,8 @@ class TFWrapper(MLClass):
             activation = activation,
             use_bias = use_bias,
             kernel_initializer = initializer(),
-            bias_initializer = initializer())
+            bias_initializer = initializer(),
+            name = 'layer_{}'.format(int(self.num_layers)))
 
         self.prev_layer = self.layers[self.num_layers]
         self.num_layers += 1
@@ -160,7 +159,7 @@ class TFWrapper(MLClass):
 
         # Set output layer
         self.prediction = self.layers.pop(self.num_layers - 1)
-        self.y = tf.placeholder('float', [None,self.output_size])
+        self.y = tf.placeholder('float', [None,self.output_size], 'y')
         # `self.penalizer` acts as an alias so during training the code is
         # more readible, shorter, and prettier
         # Set cost functions
@@ -169,25 +168,30 @@ class TFWrapper(MLClass):
         if self.classification:
             self.cost = tf.reduce_mean(
                 tf.nn.softmax_cross_entropy_with_logits_v2(
-                    labels = self.y, logits = self.prediction))
+                    labels = self.y, logits = self.prediction), name = 'cost')
             self.correct_prediction = tf.equal(
                 tf.argmax(self.y,1),
-                tf.argmax(self.prediction,1))
+                tf.argmax(self.prediction,1),
+                name = 'correct_prediction')
             self.accuracy = tf.reduce_mean(
-                tf.cast(self.correct_prediction, tf.float32))
+                tf.cast(self.correct_prediction, tf.float32),
+                name = 'accuracy')
             self.penalizer = self.accuracy
 
         else:
             if self.cost_func == 'MSE':
                 self.cost = tf.reduce_mean(
-                    tf.square(self.y - self.prediction))
+                    tf.square(self.y - self.prediction),
+                    name = 'cost')
             elif self.cost_func == 'RMSE':
                 self.cost = tf.sqrt(
                     tf.reduce_mean(
-                        tf.square(self.y - self.prediction)))
+                        tf.square(self.y - self.prediction)),
+                        name = 'cost')
             elif self.cost_func == 'MAE':
                 self.cost = tf.reduce_mean(
-                    tf.abs(self.y - self.prediction))
+                    tf.abs(self.y - self.prediction),
+                    name = 'cost')
             else:
                 raise NNError('Cost function ({}) not recognized'.format(cost))
             self.penalizer = self.cost
@@ -208,7 +212,7 @@ class TFWrapper(MLClass):
             return np.sqrt(_mse(x,y))
         def _mae(x,y):
             return np.mean(np.absolute(x-y))
-        
+
         if self.classification:
             self.cost_ = _acc
         elif self.cost_func == 'MSE':
@@ -274,7 +278,7 @@ class TFWrapper(MLClass):
         num_training = len(training_data)
         iters_per_epoch = int(num_training/batch_size)
         self.training_performance = _TrainingPerformance(num_epochs,val_freq)
-       
+
         with tf.Session() as sess:
             # Initialize the graph
             sess.run(tf.global_variables_initializer())
@@ -350,10 +354,11 @@ class TFWrapper(MLClass):
         else:
             out = np.zeros(shape = (src.shape[0],self.output_size))
             src_ = src
-        
+
         with tf.Session() as sess:
             for i in range(out.shape[0]):
-                d = np.reshape(src_[i,:],[1,self.output_size])
+                # Keep the shape of the array in (1,n)
+                d = src_[i:i+1,:]
                 out[i,:] = sess.run(self.prediction,
                                     feed_dict = {self.x: d})
         return np.squeeze(out)
@@ -364,13 +369,24 @@ class TFWrapper(MLClass):
         return self.training_performance.visualize()
 
     def save(self, filename = None):
-        '''Saves the network
-        '''
-        if filename is None:
-            if self.base_save_loc[-1] != '/':
-                self.base_save_loc += '/'
-            filename = self.base_save_loc + self.name
-        MLClass.save(self, filename = filename)
+        pass
+        # '''Saves the network
+        # '''
+        # if filename is None:
+        #     if self.base_save_loc[-1] != '/':
+        #         self.base_save_loc += '/'
+        #     filename = self.base_save_loc + self.name
+        # d = self.__dict__
+        # saveobj(d,filename)
+
+    @classmethod
+    def load(cls, filename):
+        # a = cls()
+        # d = loadobj(filename)
+        # a.__dict__ = d
+        # return a
+        pass
+
 
 class _TrainingPerformance:
     '''Wrapper class for the training and validation performance
@@ -391,7 +407,7 @@ class _TrainingPerformance:
         #   second element is std
         self.train_acc = []
         self.val_acc = []
-        
+
 
     def add_training_error(self,mean,std):
         if type(self.train_acc) != list:
@@ -474,6 +490,3 @@ def experiment_classification_network(name):
 
 class NNError(Exception):
     pass
-
-
-

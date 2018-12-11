@@ -10,7 +10,7 @@ import constants
 
 def saveobj(obj,filename, protocol=None):
     if protocol is None:
-        protocol = constants.DEFUALT_UTIL_PICKLE_PROTOCOL
+        protocol = constants.DEFAULT_UTIL_PICKLE_PROTOCOL
     check_savepath_valid(filename)
     with open(filename, 'wb') as output:  # Overwrites any existing file.
         pickle.dump(obj, output, protocol)
@@ -68,7 +68,7 @@ def get_idxs_of_val(arr, val):
             np.array([0,1])
 
     ex2:
-        input: 
+        input:
             arr: np.array([0,1,1,0,1,0])
             val: 0
         output:
@@ -85,7 +85,7 @@ def get_idxs_of_val(arr, val):
 class IOClass:
     '''Base class
     Defines saving, loading with pickle.
-    If a class is very large in size (data_processing.DataPreprocessing), 
+    If a class is very large in size (data_processing.DataPreprocessing),
     do not use this class.
     '''
     def __init__(self):
@@ -94,11 +94,8 @@ class IOClass:
     def save(self, filename):
         '''If filename is not None, override the internal save location.
         '''
-        if filename is not None:
-            self.filename = filename
-        if self.filename is None:
-            raise IOError('IOClass.save: A save location must be specified in order to save.')
-        saveobj(self,self.filename)
+
+        saveobj(self,filename)
 
     @classmethod
     def load(cls, filename):
@@ -106,14 +103,12 @@ class IOClass:
         '''
         return loadobj(filename)
 
-
 class MLClass(IOClass):
 
     def __init__(self):
         IOClass.__init__(self)
         self.trained = False
         self.ml = True
-
 
 class IOError(Exception):
     pass

@@ -66,8 +66,8 @@ def bicubic(corners, loc):
         d1     d2    d3    d4          0     1     2     3
 
         Where `o` is an example interpolation location. Interpolation locations
-        will only in the domain within c2, c3, b2, b3, which correspond to the standard 
-        corners ll, lr, ul, ur, respectfully. We are defining these points to be the 
+        will only in the domain within c2, c3, b2, b3, which correspond to the standard
+        corners ll, lr, ul, ur, respectfully. We are defining these points to be the
         boundary of the grid we are interpolating in.
 
         Additionally, assume that the distance between each of the points are equal
@@ -196,7 +196,7 @@ def _inverse_distance(xi, p):
         ret.append(1 / ((math.sqrt((ai-x)**2 + (aj-y)**2)) ** p))
     return ret
 
-class MLR(IOClass):
+class MLR(MLClass):
     '''Multiple Linear Regression
 
     Basically wraps sklearn's linear regression package so that a single
@@ -204,7 +204,7 @@ class MLR(IOClass):
     '''
 
     def __init__(self, **kwargs):
-        IOClass.__init__(self)
+        MLClass.__init__(self)
         self.kwargs = kwargs
         self.kwargs['copy_X'] = True
         self.clfs = []
@@ -257,11 +257,11 @@ class MLR(IOClass):
             scores.append(self.clfs[i].score(X,y[:,i]))
         return scores
 
-class InterpolationWrapper(MLClass):
+class ClfInterpWrapper(MLClass):
     ''' Classification Preprocess Interpolation
 
     This class encpasulates a classification method that preprocesses the data
-    before it is fed to a single or multiple different interpolation schemes. 
+    before it is fed to a single or multiple different interpolation schemes.
 
     The goal of this structure is to divide up data between different interpolation
     methods and then combine it effectively.
@@ -269,7 +269,7 @@ class InterpolationWrapper(MLClass):
 
     class _NonMLInterpolationWrapper:
         '''
-        Dummy class that wraps a non-machine learning method (ex: bilinear) 
+        Dummy class that wraps a non-machine learning method (ex: bilinear)
         so that the code can be smooth in InterpolationWrapper
         '''
         def __init__(self,func,res):
@@ -292,10 +292,10 @@ class InterpolationWrapper(MLClass):
             if len(src.shape) == 1:
                 return interpolate_grid(
                     input_grid = src, res = self.res, interp_func = self.func)
-            
+
             ret = np.zeros(shape=(src.shape[0], self.res ** 2))
             for i in range(src.shape[0]):
-                ret[i,:] = interpolate_grid(input_grid = src[i], res = self.res, 
+                ret[i,:] = interpolate_grid(input_grid = src[i], res = self.res,
                     interp_func = self.func)
 
     def __init__(self,clf,regs,res=None):
@@ -305,21 +305,21 @@ class InterpolationWrapper(MLClass):
         -----------
         clf (comparison_methods.classification.BaseClassifier)
             - This is an INSTANCE of a class that is inhereited from the base
-              class BaseClassifier. 
+              class BaseClassifier.
         regs (dict: key -> comparison_method)
-            - The key has to be the outputs of the classifier associated with 
+            - The key has to be the outputs of the classifier associated with
               that interpolation method
 
               Example:
                     Let my classifier be a binary classifier.
-                    If the output of the classifier if 1, I want to use bilinear 
+                    If the output of the classifier if 1, I want to use bilinear
                     interpolation.
                     If the output of the classifier is 0, I want to use MLR.
 
                     Then my regs argument will be:
                     reg = {0: bilinear, 1: MLR()}
-                        - Note that MLR IS INSTANTIATED.  
-        res (int, Optional)  
+                        - Note that MLR IS INSTANTIATED.
+        res (int, Optional)
             - Resolution of the output interpolation
         '''
         if res is None:
@@ -365,7 +365,7 @@ class InterpolationWrapper(MLClass):
             - Covariates.
         y (np.ndarray)
         '''
-        
+
         if not self.clf_trained:
             raise InterpError('Classifier must be trained before regression can be trained')
 
@@ -413,4 +413,4 @@ class InterpError(Exception):
 
 
 
-# 
+#

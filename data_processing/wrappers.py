@@ -106,7 +106,7 @@ class DataPreprocessing:
     def __init__(self, name = None, res_in = None, savepath = None,
         filepath2d = None, filepath3d = None, dataset = None, years = None,
         denorm_local = None, keys = None, num_days = None, settings = None):
-        '''Once core arrays (subgrids, locations, norm_data) are built, do not 
+        '''Once core arrays (subgrids, locations, norm_data) are built, do not
         manipulate them as it fill make `loc_to_idx` invalid
         -------------
         Args
@@ -138,8 +138,8 @@ class DataPreprocessing:
         '''
         if settings is None:
             self.settings = Settings(
-                name = name, res_in = res_in, savepath = savepath, dataset = dataset, years = years, 
-                denorm_local = denorm_local, keys = keys, num_days = num_days, filepath2d = filepath2d, 
+                name = name, res_in = res_in, savepath = savepath, dataset = dataset, years = years,
+                denorm_local = denorm_local, keys = keys, num_days = num_days, filepath2d = filepath2d,
                 filepath3d = filepath3d)
         else:
             if not isinstance(settings, Settings):
@@ -251,7 +251,7 @@ class DataPreprocessing:
             self.subgrids[key]  = self.subgrids[key][0:z, :]
             self.locations[key] = self.locations[key][0:z, :]
             self.norm_data[key] = self.norm_data[key][0:z, :]
-        
+
         # Setting the normalization constant to be the absolute maximum difference
         # Between the average value and the corners.
         # For each key, get the max norm, set it, and then normalize subgrids if necessary
@@ -647,7 +647,7 @@ class DataWrapper(IOClass):
                 self.norm_data[:,0],
                 self.norm_data[:,1])
             self.y_normalized = False
-        
+
         if self.X_normalized and denorm_X:
             self.X_normalized = False
             self.X =  Denormalize(
@@ -664,7 +664,7 @@ class DataWrapper(IOClass):
                 self.norm_data[:,0],
                 self.norm_data[:,1])
             self.y_normalized = True
-        
+
         if (not self.X_normalized) and norm_X:
             self.X_normalized = True
             self.X =  Denormalize(

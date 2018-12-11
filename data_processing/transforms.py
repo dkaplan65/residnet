@@ -52,7 +52,8 @@ def InterpolationErrorRegression(
     src,
     func,
     cost,
-    output_size = None):
+    output_size = None,
+    use_corners = False):
     '''Returns the DENORMALIZED interpolation error for each sample.
 
     IF YOU DO NOT WANT THE ORIGINAL `src` OBJECT CHANGED, deep copy the original before.
@@ -71,6 +72,11 @@ def InterpolationErrorRegression(
     output_size (int or None)
         - Specific size of the output
         - If None, defaults to the size for interpoation (1)
+
+    use_corners (bool or None)
+        - If True, uses corner indecies of y_true instead of src.X
+        - This is useful if you have the input (src.X) from multiple different sources
+          (e.g. temperature and salinity)
     ---------
     output
     ---------
@@ -80,7 +86,7 @@ def InterpolationErrorRegression(
     Example:
         For bilinear MSE interpolation, run:
             out = InterpolationErrorRegression(
-                src=src, 
+                src=src,
                 func=comparison_methods.interpolation.bilinear,
                 cost=metrics.MSE,
                 output_size = src.res ** 2)
@@ -89,13 +95,15 @@ def InterpolationErrorRegression(
                                func = func,
                                cost = cost,
                                threshold = None,
-                               output_size = output_size)
+                               output_size = output_size,
+                               use_corners = use_corners)
 
 def InterpolationErrorClassification(
     src,
     func,
     cost,
-    threshold):
+    threshold,
+    use_corners = False):
     '''Returns a 2-dim one hot vector indicating the the sample's MSE is above or below
     the DENORMALIZED threshold indicated by `threshold`.
 
@@ -105,8 +113,9 @@ def InterpolationErrorClassification(
     ---------
     args
     ---------
-    src (dataProcessing.wrappers.InputDataWrapper)
+    src (dataProcessing.wrappers.InputDataWrapper or np.ndarray)
         - Contains the information necessary
+        - If src is a np.ndarray, `res` must also be provided
 
     cost (callable function, returns a scalar)
         - Error function. Returns a scalar
@@ -115,6 +124,11 @@ def InterpolationErrorClassification(
         - The threshold value to compare the output to
         - If val >= threshold, value is constants.ONE_HOT_GREATER_THAN
         - else, constants.ONE_HOT_LESS_THAN
+
+    use_corners (bool or None)
+        - If True, uses corner indecies of y_true instead of src.X
+        - This is useful if you have the input (src.X) from multiple different sources
+          (e.g. temperature and salinity)
     ---------
     output
     ---------
@@ -124,7 +138,7 @@ def InterpolationErrorClassification(
     Example:
         For bilinear MSE interpolation where you want to cutoff to be 0.12, run:
             out = InterpolationErrorRegression(
-                src=src, 
+                src=src,
                 func=comparison_methods.interpolation.bilinear,
                 cost=metrics.MSE,
                 threshold=0.12,
@@ -133,7 +147,8 @@ def InterpolationErrorClassification(
     return _InterpolationError(src = src,
                                func = func,
                                cost = cost,
-                               threshold = threshold)
+                               threshold = threshold,
+                               use_corners = use_corners)
 
 ##################
 # Core Functions
@@ -145,11 +160,12 @@ def denormalize(arr,avg,norm):
     return arr * norm + avg
 
 def _InterpolationError(
-    src, 
-    func, 
-    cost, 
+    src,
+    func,
+    cost,
     threshold,
-    output_size = None):
+    output_size = None,
+    use_corners = False):
     '''Description of the function can be seen in `InterpoaltionErrorRegression` or
     `InterpoaltionErrorClassification`.
     '''
@@ -164,15 +180,21 @@ def _InterpolationError(
     else:
         # Two categories for the classification (greater or less than)
         out = np.zeros(shape=(len(src), constants.DEFAULT_TRANS_SIZE_CLASS))
-    arr = src.y_true
+
+    X = None
+    if use_corners:
+        X = src.y_true[:,[0, src.res - 1, src.res * (src.res - 1), src.res ** 2 - 1]]
+    else:
+        X = src.X
+
 
     # Get error and set to output
     num_samples = len(src)
     for i in range(num_samples):
-        if i % 5000 == 0:
+        if i % 50000 == 0:
             logging.info('{}/{}'.format(i,num_samples))
-        interpolated_grid = interpolate_grid(src.X[i,:], src.res, func)
-        error = cost(interpolated_grid - arr[i,:])
+        interpolated_grid = interpolate_grid(X[i,:], src.res, func)
+        error = cost(interpolated_grid - src.y_true[i,:])
 
         if threshold == None:
             out[i,:] = error
@@ -383,5 +405,3 @@ def mapify(loc_to_idx,arr,year,day,res):
 
     # The returned array is upside down, flip the right way
     return np.flipud(ret)
-
-

@@ -1,7 +1,7 @@
 '''
 Runs full experiments from scratch to finish.
 
-If no parameters are passed into the experiment functions, then it 
+If no parameters are passed into the experiment functions, then it
 uses default locations and data.
 '''
 import numpy as np
@@ -20,14 +20,14 @@ logging.basicConfig(format = constants.LOGGING_FORMAT, level = logging.INFO)
 default_denorm_local = False
 
 def main():
-	experiment2(denorm_local = True)
-	experiment2(denorm_local = False)
+	experiment3(denorm_local = True)
+	experiment3(denorm_local = False)
 
 
 def experiment0():
 	'''Experiment 0:
 
-	These are the non machine-learning comparison methods that we are going to compare the 
+	These are the non machine-learning comparison methods that we are going to compare the
 	neural network to. This experiments runs these methods. Later functions
 	will then do the statistical analysis (RMSE, variance, bias) of the errors
 		- bilinear
@@ -44,7 +44,7 @@ def experiment0():
 	Saved in the location specified above.
 	'''
 	# Set default parameters if necessary
-	# It doesn't matter whether we do denorm local or global 
+	# It doesn't matter whether we do denorm local or global
 	logging.info('Entering experiment 0')
 	logging.info('Load data')
 	data = wrappers.DataPreprocessing.load('output/datapreprocessing/testing_data_denormLocalFalse_res6/')
@@ -59,7 +59,7 @@ def experiment0():
 	bilinear_save_loc = 'output/datawrapper/bilinear_test_error.pkl'
 	bicubic_save_loc = 'output/datawrapper/bicubic_test_error.pkl'
 	idw_save_loc = 'output/datawrapper/idw_test_error.pkl'
-	
+
 	logging.info('Start nearest neighbour')
 	nn = transforms.InterpolationErrorRegression(
 		src = copy.deepcopy(src),
@@ -91,7 +91,7 @@ def experiment0():
 		cost = metrics.Error,
 		output_size = src.res ** 2)
 	bicubic.save(bicubic_save_loc)
-	
+
 def experiment1(denorm_local = None):
 	'''Experiment 1:
 	Trains MLR on the training data and then runs it on the testing data.
@@ -112,7 +112,7 @@ def experiment1(denorm_local = None):
 	training_data.normalize()
 	logging.info('make training data')
 	train_src = training_data.make_array(output_key = 'temp')
-	
+
 	logging.info('loading testing data')
 	testing_data = wrappers.DataPreprocessing.load(
 		'output/datapreprocessing/testing_data_denormLocal{}_res6/'.format(denorm_local))
@@ -144,7 +144,7 @@ def experiment2(denorm_local = None):
 	if denorm_local is None:
 		denorm_local = default_denorm_local
 	nn_error_save_loc = 'output/datawrapper/nn_lores_test_error_denormLocal{}.pkl'.format(denorm_local)
-	nn_model_save_loc = 'output/model/nn_lores.pkl'
+	nn_model_save_loc = 'output/models/nn_lores.pkl'
 
 	logging.info('denorm local {}'.format(denorm_local))
 
@@ -159,7 +159,7 @@ def experiment2(denorm_local = None):
 		randomize = True)
 	train_src = training_data.make_array(output_key = 'temp', idxs = idxs['training'])
 	val_src = training_data.make_array(output_key = 'temp', idxs = idxs['validation'])
-	
+
 	# Make the testing data
 	testing_data = wrappers.DataPreprocessing.load('output/datapreprocessing/testing_data_denormLocal{}_res6/'.format(
 		denorm_local))
@@ -168,17 +168,18 @@ def experiment2(denorm_local = None):
 
 	# Make, train, and save the training performance.
 	nn = neural_network.experiment_interpolation_network('nn_lores')
+
 	nn.fit(
-		training_data = train_src, 
-		num_epochs = 5,
+		training_data = train_src,
+		num_epochs = 1,
         validation_data = val_src)
-	fig = nn.visualize_training()
-	figname = 'nn_lores_training.png'
-	fig.savefig(figname)
-	nn.save(filename = nn_model_save_loc)
-	
-	# Run and save output
+	# fig = nn.visualize_training()
+	# figname = 'nn_lores_training.png'
+	# fig.savefig(figname)
+	# nn.save(filename = nn_model_save_loc)
+
 	y_pred = nn.predict(in_data = test_src.X)
+
 	y_pred = transforms.Denormalize_arr(
 		arr = y_pred, avg = test_src.norm_data[:,0],
 		norm = test_src.norm_data[:,1])
@@ -207,54 +208,55 @@ def experiment3(denorm_local = None, threshold = None):
 	# Have a smaller split because the datasize is smaller
 	idxs = training_data.split_data_idxs(
 		division_format = 'split',
-		d = {'training': 0.9, 'validation': 0.1},
+		split_dict = {'training': 0.9, 'validation': 0.1},
 		randomize = True)
 	train_src = training_data.make_array(output_key = 'temp', idxs = idxs['training'])
 	train_src = make_bilinear_classification_truth_DataWrapper(
-		src = train_src, 
-		normalize_return_input = True, 
-		threshold = threshold, 
+		src = train_src,
+		threshold = threshold,
 		input_keys = None) # All input keys
-	
+
 	val_src = training_data.make_array(output_key = 'temp', idxs = idxs['validation'])
 	val_src = make_bilinear_classification_truth_DataWrapper(
-		src = val_src, 
-		normalize_return_input = True, 
-		threshold = threshold, 
+		src = val_src,
+		threshold = threshold,
 		input_keys = None) # All input keys
-	
+
 	# Make the testing data
 	testing_data = wrappers.DataPreprocessing.load('output/datapreprocessing/testing_data_denormLocal{}_res6/'.format(
 		denorm_local))
 	testing_data.normalize()
-	# Convert test_src to a classification array
+	test_src = testing_data.make_array(output_key = 'temp')
 	test_src = make_bilinear_classification_truth_DataWrapper(
-		src = test_src, 
-		normalize_return_input = True, 
-		threshold = threshold, 
+		src = test_src,
+		threshold = threshold,
 		input_keys = None) # All input keys
 
 	# Make, train, and save the training performance.
 	nn = neural_network.experiment_classification_network('nn_rmse{}'.format(
 		str(int(threshold * 1000))))
-	nn.train(
-		training_data = train_src, 
+	nn.fit(
+		training_data = train_src,
 		num_epochs = 5,
         validation_data = val_src)
-	fig = nn.visualize_training()
-	figname = 'output/{}_accuracy.png'.format(nn.name)
-	fig.savefig(figname)
-	nn.save()
-	
-	# Run and save output
-	y_pred = nn.run(in_data = test_src.X)
-	test_src.y_true -= y_pred
-	test_src.denormalize(denorm_y = True)
-	test_src.save(nn_error_save_loc)
+	# fig = nn.visualize_training()
+	# figname = 'output/{}_accuracy.png'.format(nn.name)
+	# fig.savefig(figname)
+	# nn.save()
+
+	# Run nn on test data
+	y_pred = nn.predict(test_src.X)
+	prec = metrics.precision(y_true = test_src.y_true, y_pred = y_pred)
+	acc = metrics.accuracy(y_true = test_src.y_true, y_pred = y_pred)
+	f1 = metrics.F1(y_true = test_src.y_true, y_pred = y_pred)
+
+	print('precision: {}'.format(prec))
+	print('accuracy: {}'.format(acc))
+	print('F1: {}'.format(f1))
 
 def experiment4(denorm_local):
 	'''
-	Run 
+	Run
 	'''
 	pass
 
@@ -263,7 +265,7 @@ def experiment4(denorm_local):
 # Auxiliary methods
 ####################
 class generate_preprocess_data:
-	'''Static method wrapper for generating data to use in experiments.	
+	'''Static method wrapper for generating data to use in experiments.
 	'''
 	@classmethod
 	def training(cls, denorm_local = None):
@@ -362,46 +364,22 @@ def table1b_analysis(
 	pass
 
 def make_bilinear_classification_truth_DataWrapper(
-	src, normalize_return_input, threshold, input_keys):
+	src, threshold, input_keys):
 	'''Converts the y_true of the return array to be a classification array
 	with the denormalized bilinear threshold RMSE set to `threshold`.
 	'''
-	if normalize_return_input:
-		src.normalize()
-	else:
-		src.denormalize()
-
-	ret = src.make_array(input_keys = input_keys, output_key = 'temp')
-	src.denormalize()
-	temp = testing_data.make_array(input_keys = ['temp'], output_key = 'temp')
-	temp = transforms.InterpolationErrorClassification(
-	    src = temp,
+	src.denormalize(denorm_y = True)
+	src = transforms.InterpolationErrorClassification(
+	    src = src,
 	    func = interpolation.bilinear,
 	    cost = metrics.RMSE,
-	    threshold = threshold)
-	ret.y_true = copy.deepcopy(temp.y_true)
+	    threshold = threshold,
+		use_corners = True)
 
-	return ret
+	return src
 
 
-	
+
 
 if __name__ == '__main__':
 	main()
-
-
-
-
-
-
-
-
-
-
-
-
-	
-
-
-
-

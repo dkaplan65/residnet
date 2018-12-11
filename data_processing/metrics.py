@@ -1,4 +1,4 @@
-'''
+''' Interpolation and classification metrics
 classification
     * Confusion Matrix
         - accuracy
@@ -22,9 +22,19 @@ regression
         - Variance
         - Standard Deviation
 
+These functions are meant to be computed over a single dimension arrays.
+If you have a 2 dimension array that you want it to do the computation over,
+use the command:
+    np.apply_along_axis(func, axis, arr)
+
+Future versions:
+    Different kinds of means besides arithmetic:
+        harmonic
+        geometric
 '''
 import numpy as np
 from sklearn.metrics import confusion_matrix as cm
+from .transforms import collapse_one_hot
 
 #############
 # Interpolation functions
@@ -88,40 +98,83 @@ def std(arr):
 # Classification functions
 #############
 
-def confusion_matrix(y_pred, y_truth):
+def confusion_matrix(y_true, y_pred):
     '''Returns in this order:
         tn, fp, fn, tp
     '''
-    return cm(y_truth, y_pred).ravel()
+    if len(y_true.shape) == 2:
+        y_true = collapse_one_hot(arr = y_true)
+    if len(y_pred.shape) == 2:
+        y_pred = collapse_one_hot(arr = y_pred)
+    return cm(y_true, y_pred).ravel()
 
-def precision(y_pred, y_truth):
-    '''Use confusion matrix
+def precision(y_true = None, y_pred = None, cm = None):
+    '''Precision.
+    If `cm` (confusion matrix) is specified, use that instead.
     '''
-    tn, fp, fn, tp = confusion_matrix(y_pred, y_truth)
+    if confusion_matrix is not None:
+        tn, fp, fn, tp = cm
+    else:
+        raise Exception('If `cm` is not specified, both y_true'
+            ' and y_pred must be specified')
+        tn, fp, fn, tp = confusion_matrix(y_true, y_pred)
     return tp/(tp + fp)
 
-def accuracy(y_pred, y_truth):
-    tn, fp, fn, tp = confusion_matrix(y_pred, y_truth)
-
+def accuracy(y_true = None, y_pred = None, cm = None):
+    '''Accuracy
+    If `cm` (confusion matrix) is specified, use that instead.
+    '''
+    if confusion_matrix is not None:
+        tn, fp, fn, tp = cm
+    else:
+        if y_true is None or y_pred is None:
+            raise Exception('If `cm` is not specified, both y_true'
+                ' and y_pred must be specified')
+        tn, fp, fn, tp = confusion_matrix(y_true, y_pred)
     return (tp+tn)/(tp+fp+fn+tn)
 
-def recall(y_pred, y_truth):
-    tn, fp, fn, tp = confusion_matrix(y_pred, y_truth)
-
+def recall(y_true = None, y_pred = None, cm = None):
+    '''Reccall.
+    If `cm` (confusion matrix) is specified, use that instead.
+    '''
+    if confusion_matrix is not None:
+        tn, fp, fn, tp = cm
+    else:
+        raise Exception('If `cm` is not specified, both y_true'
+            ' and y_pred must be specified')
+        tn, fp, fn, tp = confusion_matrix(y_true, y_pred)
     return tp/(tp+fn)
 
-def F1(y_pred, y_truth):
-    prec = precision(y_pred, y_truth)
-    rec = recall(y_pred, y_truth)
-
+def F1(y_true = None, y_pred = None, cm = None):
+    ''' F1
+    If `cm` (confusion matrix) is specified, use that instead.
+    '''
+    if confusion_matrix is not None:
+        tn, fp, fn, tp = cm
+    else:
+        tn, fp, fn, tp = confusion_matrix(y_true, y_pred)
     return 2*prec*rec/(prec+rec)
 
-def specificity(y_pred, y_truth):
-    tn, fp, fn, tp = confusion_matrix(y_pred, y_truth)
-
+def specificity(y_true = None, y_pred = None, cm = None):
+    ''' Specificity.
+    If `cm` (confusion matrix) is specified, use that instead.
+    '''
+    if confusion_matrix is not None:
+        tn, fp, fn, tp = cm
+    else:
+        raise Exception('If `cm` is not specified, both y_true'
+            ' and y_pred must be specified')
+        tn, fp, fn, tp = confusion_matrix(y_true, y_pred)
     return tn/(tn+fp)
 
-def sensitivity(y_pred, y_truth):
+def sensitivity(y_true = None, y_pred = None, cm = None):
     '''Alias for recall
+    If `cm` (confusion matrix) is specified, use that instead.
     '''
-    return recall(y_pred, y_truth)
+    if confusion_matrix is not None:
+        tn, fp, fn, tp = cm
+    else:
+        raise Exception('If `cm` is not specified, both y_true'
+            ' and y_pred must be specified')
+        tn, fp, fn, tp = confusion_matrix(y_true, y_pred)
+    return recall(y_pred, y_true)

@@ -15,7 +15,7 @@ import tensorflow as tf
 import sys
 sys.path.append('..')
 import constants
-from util import IOClass
+from util import MLClass
 
 
 class BaseClassifier(MLClass):
@@ -33,7 +33,7 @@ class BaseClassifier(MLClass):
         kwargs (dict)
             - arguments that are used to specify the instance
         '''
-        IOClass.__init__(self)
+        MLClass.__init__(self)
         self.name = name
         self.kwargs = kwargs
         self.clf = func(**kwargs)
