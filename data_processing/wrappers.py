@@ -150,11 +150,11 @@ class DataPreprocessing:
         self.norm_data = {} #key -> [avg, range]
 
     def __len__(self):
-        return self.num_samples
+        return self.settings.num_samples
 
     def __str__(self):
         s = str(self.settings)
-        s += 'num samples: {}\n'.format(self.num_samples)
+        s += 'num samples: {}\n'.format(self.settings.num_samples)
         return s
 
     def _valid(self,arr):

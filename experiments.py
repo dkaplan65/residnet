@@ -4,6 +4,10 @@ Runs full experiments from scratch to finish.
 If no parameters are passed into the experiment functions, then it
 uses default locations and data.
 '''
+from keras.models import Sequential
+from keras.layers import Dense, Dropout
+import keras
+
 import numpy as np
 import matplotlib.pyplot as plt
 import logging
@@ -22,7 +26,6 @@ default_denorm_local = False
 def main():
 	experiment3(denorm_local = True)
 	experiment3(denorm_local = False)
-
 
 def experiment0():
 	'''Experiment 0:
@@ -144,7 +147,7 @@ def experiment2(denorm_local = None):
 	if denorm_local is None:
 		denorm_local = default_denorm_local
 	nn_error_save_loc = 'output/datawrapper/nn_lores_test_error_denormLocal{}.pkl'.format(denorm_local)
-	nn_model_save_loc = 'output/models/nn_lores.pkl'
+	nn_model_save_loc = 'output/models/nn_lores.h5'
 
 	logging.info('denorm local {}'.format(denorm_local))
 
@@ -167,21 +170,27 @@ def experiment2(denorm_local = None):
 	test_src = testing_data.make_array(output_key = 'temp')
 
 	# Make, train, and save the training performance.
-	nn = neural_network.experiment_interpolation_network('nn_lores')
+	model = Sequential()
+	model.add(Dense(units=100, activation='relu',input_dim=20))
+	model.add(Dense(units=100, activation='relu'))
+	model.add(Dropout(0.3))
+	model.add(Dense(units=36,activation='relu'))
+	model.compile(
+		loss = 'mse',
+		optimizer = 'adam',
+		metrics=['mse'])
+	model.fit(
+		train_src.X,
+		train_src.y_true,
+		validation_data = (val_src.X, val_src.y_true),
+		epochs = 10,
+		batch_size = 50)
+	model.save(nn_model_save_loc)
 
-	nn.fit(
-		training_data = train_src,
-		num_epochs = 1,
-        validation_data = val_src)
-	# fig = nn.visualize_training()
-	# figname = 'nn_lores_training.png'
-	# fig.savefig(figname)
-	# nn.save(filename = nn_model_save_loc)
-
-	y_pred = nn.predict(in_data = test_src.X)
-
+	# Denormalized prediction
 	y_pred = transforms.Denormalize_arr(
-		arr = y_pred, avg = test_src.norm_data[:,0],
+		arr = model.predict(test_src.X),
+		avg = test_src.norm_data[:,0],
 		norm = test_src.norm_data[:,1])
 
 	test_src.denormalize(denorm_y = True)
@@ -198,7 +207,7 @@ def experiment3(denorm_local = None, threshold = None):
 		threshold = 0.103
 
 	nn_error_save_loc = 'output/datawrapper/nn_rmse_test_error.pkl'
-	nn_model_save_loc = 'output/model/nn_rmse.pkl'
+	nn_model_save_loc = 'output/models/nn_rmse.h5'
 
 	# Make the (training, validation, testing)
 	training_data = wrappers.DataPreprocessing.load('output/datapreprocessing/clf_training_data_denormLocal{}_res6/'.format(
@@ -226,6 +235,7 @@ def experiment3(denorm_local = None, threshold = None):
 	testing_data = wrappers.DataPreprocessing.load('output/datapreprocessing/testing_data_denormLocal{}_res6/'.format(
 		denorm_local))
 	testing_data.normalize()
+	# test_src = testing_data.make_array(output_key = 'temp')
 	test_src = testing_data.make_array(output_key = 'temp')
 	test_src = make_bilinear_classification_truth_DataWrapper(
 		src = test_src,
@@ -233,19 +243,31 @@ def experiment3(denorm_local = None, threshold = None):
 		input_keys = None) # All input keys
 
 	# Make, train, and save the training performance.
-	nn = neural_network.experiment_classification_network('nn_rmse{}'.format(
-		str(int(threshold * 1000))))
-	nn.fit(
-		training_data = train_src,
-		num_epochs = 5,
-        validation_data = val_src)
-	# fig = nn.visualize_training()
-	# figname = 'output/{}_accuracy.png'.format(nn.name)
-	# fig.savefig(figname)
-	# nn.save()
+	model = Sequential()
+	model.add(Dense(units=100, activation='relu',input_dim=20))
+	model.add(Dense(units=100, activation='relu'))
+	model.add(Dropout(0.3))
+	model.add(Dense(units=2,activation='softmax'))
 
-	# Run nn on test data
-	y_pred = nn.predict(test_src.X)
+	model.compile(
+		loss = 'categorical_crossentropy',
+		optimizer = 'adam',
+		metrics=['accuracy'])
+
+	model.fit(
+		train_src.X,
+		train_src.y_true,
+		validation_data = (val_src.X, val_src.y_true),
+		epochs = 10,
+		batch_size = 50)
+
+	model.save(nn_model_save_loc)
+
+	y_pred = model.predict(test_src.X)
+
+	print('y_pred type', type(y_pred))
+	print('y_pred.shape:',y_pred.shape)
+
 	prec = metrics.precision(y_true = test_src.y_true, y_pred = y_pred)
 	acc = metrics.accuracy(y_true = test_src.y_true, y_pred = y_pred)
 	f1 = metrics.F1(y_true = test_src.y_true, y_pred = y_pred)

@@ -340,22 +340,17 @@ def collapse_one_hot(arr):
     '''
     ret = np.zeros(arr.shape[0])
     for i in range(arr.shape[0]):
-        if arr[i,:] == ONE_HOT_GREATER_THAN:
-            ret[i] = 1
+        ret[i] = np.argmax(arr[i,:])
     return ret
 
 def one_hotify(arr):
     '''Transforms a binary array to a one hot array
-    1: greater than
-    0: less than
+    Uses
     '''
 
     ret = np.zeros(shape=(len(arr),2))
     for i in range(len(arr)):
-        if arr[i] == 1:
-            ret[i,:] = constants.ONE_HOT_GREATER_THAN
-        else:
-            ret[i,:] = constants.ONE_LESS_THAN
+        ret[i,int(arr[i])] = 1
     return ret
 
 def mapify(loc_to_idx,arr,year,day,res):
