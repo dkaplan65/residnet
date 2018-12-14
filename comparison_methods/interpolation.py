@@ -4,6 +4,7 @@ Nearest Neighbor
 Bicubic
 Inverse Distance Weighting
 Multiple Linear Regression (MLR)
+Classification preprocess neural network interpolation
 
 `ll` refers to the lower left corner of the subgrid
 `lr` refers to the lower right corner of the subgrid
@@ -353,7 +354,6 @@ class ClfInterpWrapper(MLClass):
             - Observations
         '''
         self.clf.fit(X = X, y = y)
-        self.clf_trained = True
 
     def fit_interp(self, X, y):
         '''Trains the regressors.
@@ -366,7 +366,7 @@ class ClfInterpWrapper(MLClass):
         y (np.ndarray)
         '''
 
-        if not self.clf_trained:
+        if not self.clf.trained:
             raise InterpError('Classifier must be trained before regression can be trained')
 
         self.out_len = y.shape[1]
@@ -395,22 +395,3 @@ class ClfInterpWrapper(MLClass):
 
 class InterpError(Exception):
     pass
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#

@@ -148,4 +148,4 @@ def sensitivity(y_true, y_pred):
     '''Alias for recall
     If `cm` (confusion matrix) is specified, use that instead.
     '''
-    return recall(y_pred, y_true)
+    return recall(y_true, y_pred)

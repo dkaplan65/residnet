@@ -12,7 +12,7 @@ def plot_errors_relative(ax, arr_primary, lst_arrs, lst_labels,
 	label_primary = None, primary_color = None, colors = None,
 	linewidth = None, **kwargs):
 
-	'''Plots the errors of the arrays in `lst_arrs` in respective order to 
+	'''Plots the errors of the arrays in `lst_arrs` in respective order to
 	the sorted `arr`
 
 	Throws error if the length of every array being plotted are not the
@@ -63,7 +63,7 @@ def plot_errors_relative(ax, arr_primary, lst_arrs, lst_labels,
 		else:
 			color = colors[i]
 		arr_ = lst_arrs[i]
-		ax.plot( 
+		ax.plot(
 			x = x,
 			y = arr_[idx],
 			label = lst_labels[i],
@@ -73,9 +73,9 @@ def plot_errors_relative(ax, arr_primary, lst_arrs, lst_labels,
 
 	# Plot primary label last so that it is on top
 	ax.plot(
-		x = x, 
-		y = arr_primary[idxs], 
-		color = primary_color, 
+		x = x,
+		y = arr_primary[idxs],
+		color = primary_color,
 		linewidth = linewidth,
 		label = label_primary)
 
@@ -113,8 +113,25 @@ def map(ax, arr, cmap = None, **kwargs):
 		labelright = False)
 	return set_ax_labels(ax,**kwargs)
 
-def set_ax_labels(ax,title = None,title_size = None,xlabel = None,
-	xlabel_size = None,ylabel = None,ylabel_size = None):
+def map_over_time(src, cmap, **kwargs):
+	'''Maps the DataWrapper contents for each day in the year
+	and saves each day as a file. They are then stitched together in
+	an mp4. Iteratively calls `visualization.map` and
+	`data_processing.transforms.mapify`.
+
+	Useful for things like:
+		- classification error over time
+		- interpolation error over time
+		- subgrid classification over time
+
+	src (data_processing.wrappers.DataWrapper)
+		- Stores the data
+	'''
+
+	raise NotImplementedError('Not Implemented')
+
+def set_ax_labels(ax, title = None, title_size = None, xlabel = None,
+	xlabel_size = None, ylabel = None, ylabel_size = None):
 	'''
 	Adds optional labels to the specified Axes
 	'''
@@ -125,14 +142,12 @@ def set_ax_labels(ax,title = None,title_size = None,xlabel = None,
 			ax.set_title(title)
 	if xlabel is not None:
 		if xlabel_size is not None:
-			ax.set_title(xlabel, fontsize = xlabel_size)
+			ax.set_xlabel(xlabel, fontsize = xlabel_size)
 		else:
-			ax.set_title(xlabel)
+			ax.set_xlabel(xlabel)
 	if ylabel is not None:
 		if ylabel_size is not None:
-			ax.set_title(ylabel, fontsize = ylabel_size)
+			ax.set_ylabel(ylabel, fontsize = ylabel_size)
 		else:
-			ax.set_title(ylabel)
+			ax.set_ylabel(ylabel)
 	return ax
-
-

@@ -224,9 +224,6 @@ def makeBicubicArrays(src):
 
     Additionally, you will not be able to normalize the data again after this is called
     so everythiing is denormalized before
-
-    MODIFIES THE INPUT AND DOES NOT RETURN ANYTHING. IF YOU DO NOT WANT THE ALGORITHM
-    TO MODIFY THE ORIGINAL THEN MAKE A COPY BEFORE.
     '''
     if (not src.input_keys[0] == src.output_key) or len(src.input_keys) > 1:
         raise ValueError('makeBucubicArrays: src.input_keys is not the same as src.output_key')
@@ -353,7 +350,7 @@ def one_hotify(arr):
         ret[i,int(arr[i])] = 1
     return ret
 
-def mapify(loc_to_idx,arr,year,day,res):
+def mapify(loc_to_idx,arr,year,day,res,classification):
     '''Converts the list of subgrids into a single matrix where every subgrid
     is in the right location.
 
@@ -380,11 +377,14 @@ def mapify(loc_to_idx,arr,year,day,res):
     ret = np.zeros(shape=(maxy,maxx)) * np.nan
     logging.debug('Map size: {}'.format(ret.shape))
 
+    if classification and len(arr.shape) == 2:
+        arr = np.argmax(arr, axis = 1)
+
     # For each index, check if it is in the
     for x in range(maxx):
         for y in range(maxy):
             x_max = x + res
-            y_max = y + self.base.res
+            y_max = y + res
 
             loc = (float(year),
                    float(day),
@@ -395,7 +395,10 @@ def mapify(loc_to_idx,arr,year,day,res):
             if loc in loc_to_idx:
                 logging.debug('{} in dict'.format(loc))
                 idx = loc_to_idx[loc]
-                ret[int(y):int(y_max), int(x):int(x_max)] = np.reshape(arr[idx,:], [res, res])
+                if classification:
+                    ret[int(y):int(y_max), int(x):int(x_max)] = arr[idx]
+                else:
+                    ret[int(y):int(y_max), int(x):int(x_max)] = np.reshape(arr[idx,:], [res, res])
 
 
     # The returned array is upside down, flip the right way

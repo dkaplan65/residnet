@@ -15,7 +15,6 @@ import copy
 
 from data_processing import wrappers, transforms, metrics
 from comparison_methods import classification, interpolation
-from comparison_methods import neural_network
 import util
 import constants
 import visualization
@@ -24,8 +23,8 @@ logging.basicConfig(format = constants.LOGGING_FORMAT, level = logging.INFO)
 default_denorm_local = False
 
 def main():
-	experiment3(denorm_local = True)
-	experiment3(denorm_local = False)
+	experiment5(denorm_local = False)
+	# experiment4(denorm_local = True)
 
 def experiment0():
 	'''Experiment 0:
@@ -170,15 +169,7 @@ def experiment2(denorm_local = None):
 	test_src = testing_data.make_array(output_key = 'temp')
 
 	# Make, train, and save the training performance.
-	model = Sequential()
-	model.add(Dense(units=100, activation='relu',input_dim=20))
-	model.add(Dense(units=100, activation='relu'))
-	model.add(Dropout(0.3))
-	model.add(Dense(units=36,activation='relu'))
-	model.compile(
-		loss = 'mse',
-		optimizer = 'adam',
-		metrics=['mse'])
+	model = standard_regression_network()
 	model.fit(
 		train_src.X,
 		train_src.y_true,
@@ -209,56 +200,19 @@ def experiment3(denorm_local = None, threshold = None):
 	nn_error_save_loc = 'output/datawrapper/nn_rmse_test_error.pkl'
 	nn_model_save_loc = 'output/models/nn_rmse.h5'
 
-	# Make the (training, validation, testing)
-	training_data = wrappers.DataPreprocessing.load('output/datapreprocessing/clf_training_data_denormLocal{}_res6/'.format(
-		denorm_local))
-	training_data.normalize()
-	# Split the training_data into both training and validation sets
-	# Have a smaller split because the datasize is smaller
-	idxs = training_data.split_data_idxs(
-		division_format = 'split',
-		split_dict = {'training': 0.9, 'validation': 0.1},
-		randomize = True)
-	train_src = training_data.make_array(output_key = 'temp', idxs = idxs['training'])
-	train_src = make_bilinear_classification_truth_DataWrapper(
-		src = train_src,
-		threshold = threshold,
-		input_keys = None) # All input keys
-
-	val_src = training_data.make_array(output_key = 'temp', idxs = idxs['validation'])
-	val_src = make_bilinear_classification_truth_DataWrapper(
-		src = val_src,
-		threshold = threshold,
-		input_keys = None) # All input keys
-
-	# Make the testing data
-	testing_data = wrappers.DataPreprocessing.load('output/datapreprocessing/testing_data_denormLocal{}_res6/'.format(
-		denorm_local))
-	testing_data.normalize()
-	# test_src = testing_data.make_array(output_key = 'temp')
-	test_src = testing_data.make_array(output_key = 'temp')
-	test_src = make_bilinear_classification_truth_DataWrapper(
-		src = test_src,
-		threshold = threshold,
-		input_keys = None) # All input keys
+	d = load_datawrappers(denorm_local = denorm_local, threshold = threshold,
+		load_reg_train = False, load_clf_train = True)
+	train_src = d['clf_train_src']
+	test_src = d['test_src']
 
 	# Make, train, and save the training performance.
-	model = Sequential()
-	model.add(Dense(units=100, activation='relu',input_dim=20))
-	model.add(Dense(units=100, activation='relu'))
-	model.add(Dropout(0.3))
-	model.add(Dense(units=2,activation='softmax'))
-
-	model.compile(
-		loss = 'categorical_crossentropy',
-		optimizer = 'adam',
-		metrics=['accuracy'])
+	model = standard_classification_network()
 
 	model.fit(
 		train_src.X,
 		train_src.y_true,
-		validation_data = (val_src.X, val_src.y_true),
-		epochs = 10,
+		# validation_data = (val_src.X, val_src.y_true),
+		epochs = 5,
 		batch_size = 50)
 
 	model.save(nn_model_save_loc)
@@ -276,11 +230,104 @@ def experiment3(denorm_local = None, threshold = None):
 	print('accuracy: {}'.format(acc))
 	print('F1: {}'.format(f1))
 
-def experiment4(denorm_local):
+	# Calculate error
+	error = np.zeros(y_pred.shape[0])
+	for i in range(len(y_pred)):
+		if not np.array_equal(y_pred[i,:], test_src.y_true[i,:]):
+			error[i] = 1
+
+	map = transforms.mapify(
+		loc_to_idx = test_src.loc_to_idx,
+		arr = error,
+		year = '2008',
+		day = 25,
+		res = test_src.res,
+		classification = True)
+
+	plt.imshow(map)
+	plt.show()
+
+def experiment4(denorm_local = None, threshold = None):
+	'''Classification with Logistic regression
 	'''
-	Run
+	if denorm_local is None:
+		denorm_local = default_denorm_local
+	if threshold is None:
+		# Defaults to the mean bilinear mean RMSE
+		threshold = 0.103
+
+	nn_error_save_loc = 'output/datawrapper/nn_rmse_test_error.pkl'
+	nn_model_save_loc = 'output/models/nn_rmse.h5'
+
+	d = load_datawrappers(denorm_local = denorm_local, threshold = threshold,
+		load_reg_train = False, load_clf_train = True)
+	train_src = d['clf_train_src']
+	test_src = d['test_src']
+
+	test_src.y_true = np.argmax(test_src.y_true, axis = 1)
+
+	model = classification.LogisticRegression(penalty = 'l2')
+	model.fit(X = train_src.X, y = train_src.y_true)
+	y_pred = model.predict(X = test_src.X)
+
+	prec = metrics.precision(y_true = test_src.y_true, y_pred = y_pred)
+	acc = metrics.accuracy(y_true = test_src.y_true, y_pred = y_pred)
+	f1 = metrics.F1(y_true = test_src.y_true, y_pred = y_pred)
+
+	print('precision: {}'.format(prec))
+	print('accuracy: {}'.format(acc))
+	print('F1: {}'.format(f1))
+
+def experiment5(denorm_local = None, threshold = None):
+	'''Trains the classification preprocess nn (NN-ENSM) with threshold `threshold`
 	'''
-	pass
+	if denorm_local is None:
+		denorm_local = default_denorm_local
+	if threshold is None:
+		# Defaults to the mean bilinear mean RMSE
+		threshold = 0.103
+
+	# nn_error_save_loc = 'output/datawrapper/nn_rmse_test_error.pkl'
+	# nn_model_save_loc = 'output/models/nn_rmse.h5'
+
+	d = load_datawrappers(denorm_local = denorm_local, threshold = threshold,
+		load_reg_train = False, load_clf_train = True)
+	train_src = d['clf_train_src']
+	test_src = d['test_src']
+
+	# Make, train, and save the training performance.
+	model = standard_classification_network()
+
+	nn = classification.NNEnsemble(model = model, size = 9)
+	nn.fit(X = train_src.X, y = train_src.y_true, epochs = 5)
+	y_pred = nn.predict(test_src.X)
+
+	print('y_pred type', type(y_pred))
+	print('y_pred.shape:',y_pred.shape)
+
+	prec = metrics.precision(y_true = test_src.y_true, y_pred = y_pred)
+	acc = metrics.accuracy(y_true = test_src.y_true, y_pred = y_pred)
+	f1 = metrics.F1(y_true = test_src.y_true, y_pred = y_pred)
+
+	print('precision: {}'.format(prec))
+	print('accuracy: {}'.format(acc))
+	print('F1: {}'.format(f1))
+
+def experiment6(denorm_local = None, threshold = None):
+	'''Train and test NN-Prep
+	'''
+	if denorm_local is None:
+		denorm_local = default_denorm_local
+	if threshold is None:
+		# Defaults to the mean bilinear mean RMSE
+		threshold = 0.103
+
+	# nn_error_save_loc = 'output/datawrapper/nn_rmse_test_error.pkl'
+	# nn_model_save_loc = 'output/models/nn_rmse.h5'
+
+	d = load_datawrappers(denorm_local = denorm_local, threshold = threshold,
+		load_reg_train = False, load_clf_train = True)
+
 
 
 ####################
@@ -385,22 +432,90 @@ def table1b_analysis(
 	'''
 	pass
 
-def make_bilinear_classification_truth_DataWrapper(
-	src, threshold, input_keys):
-	'''Converts the y_true of the return array to be a classification array
-	with the denormalized bilinear threshold RMSE set to `threshold`.
+def standard_classification_network():
+	model = Sequential()
+	model.add(Dense(units=100, activation='relu',input_dim=20))
+	model.add(Dense(units=100, activation='relu'))
+	model.add(Dropout(0.3))
+	model.add(Dense(units=2,activation='softmax'))
+	model.compile(
+		loss = 'categorical_crossentropy',
+		optimizer = 'adam',
+		metrics=['accuracy'])
+	return model
+
+def standard_regression_network():
+	model = Sequential()
+	model.add(Dense(units=100, activation='relu',input_dim=20))
+	model.add(Dense(units=100, activation='relu'))
+	model.add(Dropout(0.3))
+	model.add(Dense(units=36,activation='relu'))
+	model.compile(
+		loss = 'mse',
+		optimizer = 'adam',
+		metrics=['mse'])
+	return model
+
+def load_datawrappers(denorm_local, load_reg_train, load_clf_train,
+	threshold = None):
+	'''Loads baseline datawrappers for training
 	'''
-	src.denormalize(denorm_y = True)
-	src = transforms.InterpolationErrorClassification(
-	    src = src,
-	    func = interpolation.bilinear,
-	    cost = metrics.RMSE,
-	    threshold = threshold,
-		use_corners = True)
+	if load_reg_train:
+		logging.info('Loading regression training data')
+		training_data = wrappers.DataPreprocessing.load(
+			'output/datapreprocessing/training_data_denormLocal{}_res6/'.format(
+			denorm_local))
+		training_data.normalize()
+		train_src = training_data.make_array(output_key = 'temp')
+		if threshold is not None:
+			train_src.denormalize(denorm_y = True)
+			train_src = transforms.InterpolationErrorClassification(
+			    src = train_src,
+			    func = interpolation.bilinear,
+			    cost = metrics.RMSE,
+			    threshold = threshold,
+				use_corners = True)
+	else:
+		train_src = None
 
-	return src
+	if load_clf_train:
+		logging.info('Loading classification training data')
+		clf_training_data = wrappers.DataPreprocessing.load(
+			'output/datapreprocessing/clf_training_data_denormLocal{}_res6/'.format(
+			denorm_local))
+		clf_training_data.normalize()
+		clf_train_src = clf_training_data.make_array(output_key = 'temp')
+		if threshold is not None:
+			clf_train_src.denormalize(denorm_y = True)
+			clf_train_src = transforms.InterpolationErrorClassification(
+			    src = clf_train_src,
+			    func = interpolation.bilinear,
+			    cost = metrics.RMSE,
+			    threshold = threshold,
+				use_corners = True)
+	else:
+		clf_train_src = None
 
+	# Make the testing data
+	logging.info('Loading testing data')
+	testing_data = wrappers.DataPreprocessing.load(
+		'output/datapreprocessing/testing_data_denormLocal{}_res6/'.format(
+		denorm_local))
+	testing_data.normalize()
+	# test_src = testing_data.make_array(output_key = 'temp')
+	test_src = testing_data.make_array(output_key = 'temp')
+	if threshold is not None:
+		test_src.denormalize(denorm_y = True)
+		test_src = transforms.InterpolationErrorClassification(
+			src = test_src,
+			func = interpolation.bilinear,
+			cost = metrics.RMSE,
+			threshold = threshold,
+			use_corners = True)
 
+	return {'train_src':train_src,
+		'test_src': test_src,
+		'clf_train_src': clf_train_src}
 
 
 if __name__ == '__main__':
