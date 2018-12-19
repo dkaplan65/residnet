@@ -1,3 +1,7 @@
+'''
+Author: David Kaplan
+Advisor: Stephen Penny
+'''
 import numpy as np
 import time
 import math
@@ -6,8 +10,7 @@ import pickle
 import logging
 from netCDF4 import Dataset
 
-from .transforms import Normalize_arr as Normalize
-from .transforms import Denormalize_arr as Denormalize
+import .transforms as transforms
 
 import sys
 sys.path.append('..')
@@ -15,6 +18,7 @@ import util
 from util import IOClass
 import constants
 from datasets import HYCOM
+from comparison_methods import interpolation
 
 '''
 Future Versions:
@@ -168,6 +172,7 @@ class DataPreprocessing:
 
         First, it reads the raw data from netcdf.
         Second, it parses the data into the internal data structure.
+        Third, it subtracts a bilinear interpolation from the Truth
         Lastly, it sets normalization factors
         '''
         if self.settings.parsed:
@@ -184,6 +189,7 @@ class DataPreprocessing:
 
         logging.debug('Initializing variables.')
         res_in = self.settings.res_in
+        corner_idxs = np.array([0, res_in - 1, res_in * (res_in - 1), res_in * res_in - 1])
         # placeholder for current index
         z = 0
         # Loose upper bound of how many subgrids will be parsed in total
@@ -195,8 +201,8 @@ class DataPreprocessing:
             self.subgrids[ele]  = np.zeros(shape=(num_subgrids, res_in * res_in))
             # [year, day, min_y, max_y, min_x, max_x]
             self.locations[ele] = np.zeros(shape=(num_subgrids, 6))
-            # [avg, fraction]
-            self.norm_data[ele] = np.zeros(shape=(num_subgrids, 2))
+            # [ll, lr, ul, ur, resid_avg, resid_range]
+            self.norm_data[ele] = np.zeros(shape=(num_subgrids, 6))
 
         # Iterate over every position and parse the raw data into the internal data structure
         # Throw an exception once the total number of days has been read.
@@ -228,16 +234,17 @@ class DataPreprocessing:
                                 # Append flattened arrays for each key
                                 for key in self.settings.keys:
                                     logging.debug('\n\nDataPreprocessing.parse_data: key: `{}`'.format(key))
-                                    self.subgrids[key][z,:] = raw_data.data[year][key][
-                                        t, y : y + res_in, x : x + res_in].flatten()
                                     self.locations[key][z,:] = [year, t, y, y + res_in, x, x + res_in]
 
                                     # Get corners, calculate statistics, set values
-                                    corner_idxs = np.array([0, res_in - 1, res_in * (res_in - 1), res_in * res_in - 1])
+                                    self.subgrids[key][z,:] = raw_data.data[year][key][
+                                        t, y : y + res_in, x : x + res_in].flatten()
                                     corners = self.subgrids[key][z, corner_idxs]
                                     avg = np.mean(corners)
-                                    norm = np.max(np.absolute(corners - avg))
-                                    self.norm_data[key][z,:] = np.array([avg, norm])
+                                    norm = np.max(np.absolute(self.subgrids[key][z,corner_idxs] - avg))
+                                    self.norm_data[key][z,:] = np.array(np.append(corners, [avg, norm]))
+
+                                    # log
                                     logging.debug('subgrids:\n{}\n'.format(self.subgrids[key][z,:]))
                                     logging.debug('locations:\n{}\n'.format(self.locations[key][z,:]))
                                     logging.debug('corner_vals:\n{}\n'.format(corners))
@@ -259,9 +266,9 @@ class DataPreprocessing:
             logging.info('Denorm global')
             for key in self.settings.keys:
                 logging.info('key: {}'.format(key))
-                max_range = np.max(self.norm_data[key][:,1])
+                max_range = np.max(self.norm_data[key][:,-1])
                 logging.info('max_range: {}'.format(max_range))
-                self.norm_data[key][:,1] = max_range
+                self.norm_data[key][:,-1] = max_range
 
         # Set global variables
         self.settings.parsed = True
@@ -279,9 +286,8 @@ class DataPreprocessing:
         logging.debug('Normalizing all data')
         for key in self.settings.keys:
             logging.debug('key: {}'.format(key))
-            self.subgrids[key] = Normalize(self.subgrids[key],
-                                           self.norm_data[key][:,0],
-                                           self.norm_data[key][:,1])
+            self.subgrids[key] = transforms.Normalize_arr(
+                arr = self.subgrids[key], norm_data = self.norm_data[key])
         self.settings.normalized = True
 
     def denormalize(self):
@@ -293,9 +299,8 @@ class DataPreprocessing:
         logging.debug('Denormalizing all data')
         for key in self.settings.keys:
             logging.debug('key: {}'.format(key))
-            self.subgrids[key] = Denormalize(self.subgrids[key],
-                self.norm_data[key][:,0],
-                self.norm_data[key][:,1])
+            self.subgrids[key] = transforms.Denormalize_arr(
+                arr = self.subgrids[key], norm_data = self.norm_data[key])
 
         self.settings.normalized = False
 
@@ -661,16 +666,14 @@ class DataWrapper(IOClass):
         if (not self.y_normalized) and norm_y:
             self.y_true =  Denormalize(
                 self.y_true,
-                self.norm_data[:,0],
-                self.norm_data[:,1])
+                self.norm_data)
             self.y_normalized = True
 
         if (not self.X_normalized) and norm_X:
             self.X_normalized = True
             self.X =  Denormalize(
                 self.X,
-                self.norm_data[:,0],
-                self.norm_data[:,1])
+                self.norm_data)
         return self
 
     def _transform(self, func, arr):

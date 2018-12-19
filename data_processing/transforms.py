@@ -1,10 +1,8 @@
 '''
+Author: David Kaplan
+Advisor: Stephen Penny
+
 Utilities for transforming data matrices.
-'''
-
-'''
-Transformation functions on Data
-
 Divided between core and aggregation/wrapper functions
 '''
 
@@ -16,12 +14,26 @@ import numpy as np
 import sys
 sys.path.append('..')
 import constants
+from comparison_methods import interpolation
 
 ##################
 # Aggregation and Wrapper Functions
 ##################
-def Denormalize_arr(arr, avg, norm):
+def Denormalize_arr(arr, norm_data, res):
     '''Normalizes a list of values indicated in arr
+
+    denormalized = bilinear(corners) + arr * norm + avg
+
+    norm_data (np.ndarray)
+        - norm[:,[ll,lr,ul,ur,avg,norm]]
+            * ll - denormalized lower left corner of the grid
+            * lr - denormalized lower right corner of the grid
+            * ul - denormalized upper left corner of the grid
+            * ur - denormalized upper right corner of the grid
+            * avg - average value of the residual
+            * norm - range of the residual
+    res (int)
+        - Resolution
     '''
     if len(arr.shape) == 1:
         return denormalize(arr,avg,norm)
@@ -29,10 +41,10 @@ def Denormalize_arr(arr, avg, norm):
     num_samples = arr.shape[0]
     ret = np.zeros(shape=arr.shape)
     for i in range(num_samples):
-        ret[i,:] = denormalize(arr[i,:], avg[i], norm[i])
+        ret[i,:] = denormalize(arr[i,:], norm_data[i], res)
     return ret
 
-def Normalize_arr(arr, avg, norm):
+def Normalize_arr(arr, norm_data):
     '''Normalizes a list of values indicated in arr
 
     The first dimension indexes the different samples and the second dimension is the
@@ -45,7 +57,7 @@ def Normalize_arr(arr, avg, norm):
     num_samples = arr.shape[0]
     ret = np.zeros(shape=arr.shape)
     for i in range(num_samples):
-        ret[i,:] = normalize(arr[i,:], avg[i], norm[i])
+        ret[i,:] = normalize(arr[i,:], norm_data[i])
     return ret
 
 def InterpolationErrorRegression(
@@ -153,11 +165,39 @@ def InterpolationErrorClassification(
 ##################
 # Core Functions
 ##################
-def normalize(arr,avg,norm):
-    return (arr - avg) / norm
+def denormalize(arr, norm_data, res):
+    '''
+    - norm_data[:,[ll,lr,ul,ur,avg,norm]]
+        * ll - denormalized lower left corner of the grid
+        * lr - denormalized lower right corner of the grid
+        * ul - denormalized upper left corner of the grid
+        * ur - denormalized upper right corner of the grid
+        * avg - average value of the residual
+        * norm - range of the residual
+    '''
 
-def denormalize(arr,avg,norm):
-    return arr * norm + avg
+    bil = interpolate_grid(
+        input_grid = norm_data[0:4],
+        res = res,
+        interp_func = interpolation.bilinear)
+    return arr * norm_data[-1] + norm_data[-2] + bil
+
+def normalize(arr, norm_data):
+    '''
+    - norm_data[:,[ll,lr,ul,ur,avg,norm]]
+        * ll - denormalized lower left corner of the grid
+        * lr - denormalized lower right corner of the grid
+        * ul - denormalized upper left corner of the grid
+        * ur - denormalized upper right corner of the grid
+        * avg - average value of the residual
+        * norm - range of the residual
+    '''
+    bil = interpolate_grid(
+        input_grid = norm_data[0:4],
+        res = res,
+        interp_func = interpolation.bilinear)
+    return (arr - bil - norm_data[-2])/norm_data[-1]
+
 
 def _InterpolationError(
     src,

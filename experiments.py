@@ -1,4 +1,7 @@
 '''
+Author: David Kaplan
+Advisor: Stephen Penny
+
 Runs full experiments from scratch to finish.
 
 If no parameters are passed into the experiment functions, then it
@@ -23,7 +26,7 @@ logging.basicConfig(format = constants.LOGGING_FORMAT, level = logging.INFO)
 default_denorm_local = False
 
 def main():
-	experiment5(denorm_local = False)
+	experiment2(denorm_local = False)
 	# experiment4(denorm_local = True)
 
 def experiment0():
@@ -167,6 +170,7 @@ def experiment2(denorm_local = None):
 		denorm_local))
 	testing_data.normalize()
 	test_src = testing_data.make_array(output_key = 'temp')
+	print('norm test_src.y_true[0,:]',test_src.y_true[0,:])
 
 	# Make, train, and save the training performance.
 	model = standard_regression_network()
@@ -174,18 +178,37 @@ def experiment2(denorm_local = None):
 		train_src.X,
 		train_src.y_true,
 		validation_data = (val_src.X, val_src.y_true),
-		epochs = 10,
+		epochs = 2,
 		batch_size = 50)
 	model.save(nn_model_save_loc)
 
+	y_pred = model.predict(test_src.X)
+	print('norm y_pred[0,:]',y_pred[0,:])
 	# Denormalized prediction
 	y_pred = transforms.Denormalize_arr(
-		arr = model.predict(test_src.X),
+		arr = y_pred,
 		avg = test_src.norm_data[:,0],
 		norm = test_src.norm_data[:,1])
+	print('denorm y_pred[0,:]',y_pred[0,:])
 
 	test_src.denormalize(denorm_y = True)
+	print('denorm test_src.y_true[0,:]',test_src.y_true[0,:])
+
 	test_src.y_true -= y_pred
+
+	print(metrics.RMSE(test_src.y_true))
+
+	map = transforms.mapify(
+		loc_to_idx = test_src.loc_to_idx,
+		arr = test_src.y_true,
+		year = '2008',
+		day = 25,
+		res = test_src.res,
+		classification = False)
+
+	plt.imshow(map)
+	plt.show()
+
 	test_src.save(nn_error_save_loc)
 
 def experiment3(denorm_local = None, threshold = None):
@@ -302,8 +325,8 @@ def experiment5(denorm_local = None, threshold = None):
 	nn.fit(X = train_src.X, y = train_src.y_true, epochs = 5)
 	y_pred = nn.predict(test_src.X)
 
-	print('y_pred type', type(y_pred))
 	print('y_pred.shape:',y_pred.shape)
+	print('y_true.shape:',test_src.y_true.shape)
 
 	prec = metrics.precision(y_true = test_src.y_true, y_pred = y_pred)
 	acc = metrics.accuracy(y_true = test_src.y_true, y_pred = y_pred)

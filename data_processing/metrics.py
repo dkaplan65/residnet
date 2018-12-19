@@ -1,4 +1,8 @@
-''' Interpolation and classification metrics
+'''
+Author: David Kaplan
+Advisor: Stephen Penny
+
+Interpolation and classification metrics
 classification
     * Confusion Matrix
         - accuracy

@@ -1,3 +1,7 @@
+'''
+Author: David Kaplan
+Advisor: Stephen Penny
+'''
 import numpy as np
 import logging
 import datetime

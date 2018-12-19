@@ -13,6 +13,7 @@ import logging
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.cluster import KMeans
+import scipy.stats
 
 import sys
 sys.path.append('..')
@@ -164,12 +165,8 @@ class NNEnsemble:
             if len(arr.shape) == 3:
                 rs = True
                 arr = np.argmax(arr, axis = 2)
-            arr = np.mean(arr, axis = 0)
+            arr = scipy.stats.mode(arr)[0]
             arr = np.array(np.rint(arr), dtype = int)
-            if rs:
-                arr_ = np.zeros(shape=(len(arr),2))
-                arr_[np.arange(len(arr),arr)] = 1
-                arr_ = arr
             return arr
 
         if consensus is None:
@@ -210,8 +207,7 @@ class NNEnsemble:
         out = []
         for i in range(self.size):
             out.append(self.models[i].predict(X))
-        out = self.consensus(np.array(out))
-        return ret
+        return np.squeeze(self.consensus(np.array(out)))
 
     # def save(self, loc):
 

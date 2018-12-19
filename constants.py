@@ -1,4 +1,7 @@
 '''
+Author: David Kaplan
+Advisor: Stephen Penny
+
 Default and reference values
 '''
 from numpy import array
