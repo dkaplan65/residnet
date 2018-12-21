@@ -44,7 +44,7 @@ def Denormalize_arr(arr, norm_data, res):
         ret[i,:] = denormalize(arr[i,:], norm_data[i], res)
     return ret
 
-def Normalize_arr(arr, norm_data):
+def Normalize_arr(arr, norm_data, res):
     '''Normalizes a list of values indicated in arr
 
     The first dimension indexes the different samples and the second dimension is the
@@ -57,7 +57,7 @@ def Normalize_arr(arr, norm_data):
     num_samples = arr.shape[0]
     ret = np.zeros(shape=arr.shape)
     for i in range(num_samples):
-        ret[i,:] = normalize(arr[i,:], norm_data[i])
+        ret[i,:] = normalize(arr[i,:], norm_data[i], res)
     return ret
 
 def InterpolationErrorRegression(
@@ -182,7 +182,7 @@ def denormalize(arr, norm_data, res):
         interp_func = interpolation.bilinear)
     return arr * norm_data[-1] + norm_data[-2] + bil
 
-def normalize(arr, norm_data):
+def normalize(arr, norm_data, res):
     '''
     - norm_data[:,[ll,lr,ul,ur,avg,norm]]
         * ll - denormalized lower left corner of the grid

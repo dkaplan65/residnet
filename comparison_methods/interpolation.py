@@ -22,7 +22,7 @@ import inspect
 import sys
 sys.path.append('..')
 from constants import DEFAULT_INTERP_IDW_P, DEFAULT_DP_RES_IN
-from data_processing.transforms import interpolate_grid
+from data_processing import transforms
 from util import MLClass, get_idxs_of_val
 
 def bilinear(corners, loc):
@@ -291,13 +291,13 @@ class ClfInterpWrapper(MLClass):
 
         def predict(self, src):
             if len(src.shape) == 1:
-                return interpolate_grid(
+                return transforms.interpolate_grid(
                     input_grid = src, res = self.res, interp_func = self.func)
 
             ret = np.zeros(shape=(src.shape[0], self.res ** 2))
             for i in range(src.shape[0]):
-                ret[i,:] = interpolate_grid(input_grid = src[i], res = self.res,
-                    interp_func = self.func)
+                ret[i,:] = transforms.interpolate_grid(
+                input_grid = src[i], res = self.res, interp_func = self.func)
 
     def __init__(self,clf,regs,res=None):
         '''

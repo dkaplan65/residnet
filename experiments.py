@@ -26,7 +26,8 @@ logging.basicConfig(format = constants.LOGGING_FORMAT, level = logging.INFO)
 default_denorm_local = False
 
 def main():
-	experiment2(denorm_local = False)
+	generate_preprocess_data.all_data()
+	# experiment2(denorm_local = False)
 	# experiment4(denorm_local = True)
 
 def experiment0():
@@ -136,8 +137,7 @@ def experiment1(denorm_local = None):
 
 	# Set y_true to the denormalized difference between MLR and truth
 	y_pred = transforms.Denormalize_arr(
-		arr = y_pred, avg = test_src.norm_data[:,0],
-		norm = test_src.norm_data[:,1])
+		arr = y_pred, norm_data = test_src.norm_data)
 
 	test_src.denormalize(denorm_y = True)
 	test_src.y_true -= y_pred
@@ -187,8 +187,7 @@ def experiment2(denorm_local = None):
 	# Denormalized prediction
 	y_pred = transforms.Denormalize_arr(
 		arr = y_pred,
-		avg = test_src.norm_data[:,0],
-		norm = test_src.norm_data[:,1])
+		norm_data = test_src.norm_data)
 	print('denorm y_pred[0,:]',y_pred[0,:])
 
 	test_src.denormalize(denorm_y = True)
