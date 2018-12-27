@@ -161,10 +161,13 @@ class DataPreprocessing:
         return s
 
     def __getattr__(self,key):
-        return self.settings.__dict__[key]
+        return self.__dict__['settings'].__dict__[key]
 
     def __setattr__(self,key,val):
-        self.settings.__dict__[key] = val
+        if 'settings' in self.__dict__:
+            self.__dict__['settings'].__dict__[key] = val
+        else:
+            self.__dict__[key] = val
 
     def _valid(self,arr):
         '''Determines if the array is valid.
@@ -436,7 +439,7 @@ class DataPreprocessing:
 
         # (str,int,int,int,int,int) -> int
         loc_to_idx = {}
-        logging.debug('Dnum samples: {}, input_keys: {}, output_key: {}'.format(
+        logging.debug('num samples: {}, input_keys: {}, output_key: {}'.format(
                     len(idxs), input_keys, output_key))
         num_samples = len(idxs)
         corner_idxs = np.array([0,
@@ -448,8 +451,8 @@ class DataPreprocessing:
         X = np.zeros(shape = (num_samples, len(input_keys) * 4))
 
         output_array = np.zeros(shape = (num_samples, self.res_in ** 2))
-        norm_data = np.zeros(shape = (num_samples, 2))
-        locations = np.zeros(shape = (num_samples, 6))
+        norm_data = np.zeros(shape = (num_samples, constants.NORM_LENGTH))
+        locations = np.zeros(shape = (num_samples, constants.LOCATIONS_LENGTH))
 
         for i in range(num_samples):
             idx = idxs[i]
@@ -654,32 +657,26 @@ class DataWrapper(IOClass):
 
         if self.y_normalized and denorm_y:
             self.y_true =  Denormalize(
-                self.y_true,
-                self.norm_data[:,0],
-                self.norm_data[:,1])
+                self.y_true, self.norm_data, self.res)
             self.y_normalized = False
 
         if self.X_normalized and denorm_X:
             self.X_normalized = False
             self.X =  Denormalize(
-                self.X,
-                self.norm_data[:,0],
-                self.norm_data[:,1])
+                self.X, self.norm_data, self.res)
         return self
 
     def normalize(self, norm_X = False, norm_y = False):
 
         if (not self.y_normalized) and norm_y:
             self.y_true =  Denormalize(
-                self.y_true,
-                self.norm_data)
+                self.y_true, self.norm_data, self.res)
             self.y_normalized = True
 
         if (not self.X_normalized) and norm_X:
             self.X_normalized = True
             self.X =  Denormalize(
-                self.X,
-                self.norm_data)
+                self.X, self.norm_data, self.res)
         return self
 
     def _transform(self, func, arr):

@@ -16,6 +16,8 @@ ONE_HOT_GREATER_THAN = array([1,0])
 LAT_LEN = 385
 LON_LEN = 541
 LOGGING_FORMAT = '%(levelname)s: %(module)s.%(funcName)s: %(message)s'
+NORM_LENGTH = 6 # 4 corners, avg, local range
+LOCATIONS_LENGTH = 6 # year, t, y_min, y_max, x_min, x_max
 
 # Default values for util
 DEFAULT_UTIL_PICKLE_PROTOCOL = HIGHEST_PROTOCOL
