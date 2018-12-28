@@ -14,14 +14,12 @@ The result is a reduction in accuracy for any forecasts that use this analysis a
 
 We propose a two step interpolation correction scheme for geophysical forecast models that uses feed-forward networks (FFN) to predict and correct errors by a bilinear interpolation due to unresolved subgrid-scale dynamics.
 
-'''
-This data is then subsampled to create the low resolution maps that are representative of the resolution of typical global geophysical forecasting models ([NCEP](https://www.ncep.noaa.gov)). We then train the neural network on the low resolution information to try to make it match the information in the high resolution data. Full details
-'''
+For full details on the method, see reference below.
 
 ## Installation
 Current version only tested with Python 3.6.5.  
 
-The recommended way to install the program is to use an encapsulated _conda_ environment. However, you can do this within a global environment without using _conda_.
+The recommended way to install the program is to clone the repository into an encapsulated `conda` environment. You can also do this within a global environment without using `conda`.
 
 #### With Anaconda
 `$ conda create -n residnet python=3.6.5`  
@@ -38,12 +36,12 @@ The data used in the paper is simulated, high-resolution data from
 
 ## Quick Start
 
-TODO
+See `examples.py`
 
-There are also some walkthrough examples in _examples.py_.
+For descriptions about the code, look at README.md in `residnet/`
 
 ## Extension
-The code was built to be flexible in data source, correction methods, process control, and application domains. If you want to use this code as a base for your project, cite the reference below.
+The code was built to be flexible in terms of data source, correction methods, process control, and application domains. If you want to use this code as a base for your project, cite the reference below.
 
 ## Reference
 "Optimization of Geophysical Interpolation using Neural Networks", David Kaplan and Stephen Penny (in preparation).

@@ -7,7 +7,6 @@ Default and reference values
 from numpy import array
 import matplotlib
 from pickle import HIGHEST_PROTOCOL
-import tensorflow as tf
 
 
 # Global variables
@@ -83,18 +82,3 @@ DEFAULT_VIS_CMAP = matplotlib.cm.get_cmap()
 # Default values for data_processing.transforms
 DEFAULT_TRANS_SIZE_INTERP = 1
 DEFAULT_TRANS_SIZE_CLASS = 2
-
-# Defualt values for comparison_methods.neural_network
-DEFAULT_NN_TYPE_CLASSIFICATION = True
-DEFAULT_NN_N_EPOCHS = 50
-DEFAULT_NN_OPTIMIZER = tf.train.AdamOptimizer
-DEFAULT_NN_COST_FUNC = 'RMSE'
-DEFAULT_NN_DENSE_ACTIVATION = tf.nn.relu
-DEFAULT_NN_DENSE_USE_BIAS = True
-DEFAULT_NN_INITIALIZER = tf.contrib.layers.xavier_initializer
-DEFAULT_NN_BATCH_SIZE = 50
-DEFAULT_NN_VAL_FREQ = 2
-DEFAULT_NN_SAVE_PERIODICALLY = float('inf')
-DEFAULT_NN_VERBOSE = False
-DEFAULT_NN_NAME = 'nn'
-DEFAULT_NN_BASE_SAVE_LOC = 'output/models/'
