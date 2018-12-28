@@ -128,7 +128,7 @@ def map_over_time(src, cmap, **kwargs):
 		- Stores the data
 	'''
 
-	raise NotImplementedError('Not Implemented')
+	raise NotImplemented
 
 def set_ax_labels(ax, title = None, title_size = None, xlabel = None,
 	xlabel_size = None, ylabel = None, ylabel_size = None):

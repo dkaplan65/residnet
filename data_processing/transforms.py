@@ -3,7 +3,45 @@ Author: David Kaplan
 Advisor: Stephen Penny
 
 Utilities for transforming data matrices.
-Divided between core and aggregation/wrapper functions
+Divided between core and aggregation/wrapper functions.
+
+#########################################################
+A description about normalization and denormalization:
+#########################################################
+    Normalization is different if the array is an input (feeds into an algorithm)
+    or an output (ground truth).
+
+    If the array is an input array
+        normalized = (orig - avg)/range, where
+            orig = denormalized input array
+            avg = mean(orig)
+            range = max(abs(orig - avg))
+
+    If the array is an output array
+        normalized = (orig - bilin)/range, where
+            orig = denormalized output array
+            bilin = bilinear interpolation from the corners of orig
+            avg = max(abs(orig-mean(corners(orig))))
+
+    Denormalization is just this in reverse.
+
+    Why do normalization this way?
+        Normalization is only necessary if we are feeding in the data into a ML
+        algorithm. The goal of the ML algorithm is to predict subgrid scale nonlinear
+        behavior - so the output should be the residual of a bilinear interpolation. We
+        then divide by the average of the corner values to get the data in the range of
+        (approximately) [-1,1]. We divide by the average of the corners only because that
+        is the only data we have available in a real setting.
+
+        Why is normalization different between input and output? The input to the ML
+        algorithm is just the corners of the subgrid, which is the only data we "know".
+        If we were to subtract the corners of a bilinear interpolation from the corners
+        like we did for the output array then the values at the corners will be zero,
+        which is not useful... So instead of subtracting the corner values of a bilinear
+        interpolation we subtract the average of the corners. We then do the same thing
+        of dividing by the absolute maximum of this difference, which gets the values
+        in the range [-1,1].
+
 '''
 
 
@@ -19,10 +57,11 @@ from comparison_methods import interpolation
 ##################
 # Aggregation and Wrapper Functions
 ##################
-def Denormalize_arr(arr, norm_data, res):
+def Denormalize_arr(arr, norm_data, res, output):
     '''Normalizes a list of values indicated in arr
 
-    denormalized = bilinear(corners) + arr * norm + avg
+    arr (np.ndarray)
+        - array to be denormalized
 
     norm_data (np.ndarray)
         - norm[:,[ll,lr,ul,ur,avg,norm]]
@@ -34,17 +73,20 @@ def Denormalize_arr(arr, norm_data, res):
             * norm - range of the residual
     res (int)
         - Resolution
+    output (bool)
+        - Set to True if you want to denormalize an output array
+        - Set to False if you want to denormalize an input array
     '''
     if len(arr.shape) == 1:
-        return denormalize(arr,avg,norm)
+        return denormalize(arr,avg,norm,output)
 
     num_samples = arr.shape[0]
     ret = np.zeros(shape=arr.shape)
     for i in range(num_samples):
-        ret[i,:] = denormalize(arr[i,:], norm_data[i], res)
+        ret[i,:] = denormalize(arr[i,:], norm_data[i], res, output)
     return ret
 
-def Normalize_arr(arr, norm_data, res):
+def Normalize_arr(arr, norm_data, res, output):
     '''Normalizes a list of values indicated in arr
 
     The first dimension indexes the different samples and the second dimension is the
@@ -52,12 +94,12 @@ def Normalize_arr(arr, norm_data, res):
 
     '''
     if len(arr.shape) == 1:
-        return normalize(arr,avg,norm)
+        return normalize(arr,avg,norm,output)
 
     num_samples = arr.shape[0]
     ret = np.zeros(shape=arr.shape)
     for i in range(num_samples):
-        ret[i,:] = normalize(arr[i,:], norm_data[i], res)
+        ret[i,:] = normalize(arr[i,:], norm_data[i], res, output)
     return ret
 
 def InterpolationErrorRegression(
@@ -165,8 +207,15 @@ def InterpolationErrorClassification(
 ##################
 # Core Functions
 ##################
-def denormalize(arr, norm_data, res):
+def denormalize(arr,norm_data,res,output):
     '''
+    Denormalize a single array
+
+    -----------
+    args
+    -----------
+    arr (np.ndarray)
+        * Array to be denormalized
     - norm_data[:,[ll,lr,ul,ur,avg,norm]]
         * ll - denormalized lower left corner of the grid
         * lr - denormalized lower right corner of the grid
@@ -174,16 +223,31 @@ def denormalize(arr, norm_data, res):
         * ur - denormalized upper right corner of the grid
         * avg - average value of the residual
         * norm - range of the residual
+    - res (int)
+        * Resolution
+    - output (bool)
+        * True if it is an output array (description at top)
+        * False if it is an input array
     '''
-
-    bil = interpolate_grid(
-        input_grid = norm_data[0:4],
-        res = res,
-        interp_func = interpolation.bilinear)
-    return arr * norm_data[-1] + norm_data[-2] + bil
+    if output:
+        avg = interpolate_grid(
+            input_grid = norm_data[0:4],
+            res = res,
+            interp_func = interpolation.bilinear)
+    else:
+        avg = norm_data[-2]
+    # return (arr * norm_data[-1] + norm_data[-2]) + bil
+    return (arr * norm_data[-1]) + avg
 
 def normalize(arr, norm_data, res):
     '''
+    Normalize a single array
+
+    -----------
+    args
+    -----------
+    arr (np.ndarray)
+        * Array to be denormalized
     - norm_data[:,[ll,lr,ul,ur,avg,norm]]
         * ll - denormalized lower left corner of the grid
         * lr - denormalized lower right corner of the grid
@@ -191,13 +255,21 @@ def normalize(arr, norm_data, res):
         * ur - denormalized upper right corner of the grid
         * avg - average value of the residual
         * norm - range of the residual
+    - res (int)
+        * Resolution
+    - output (bool)
+        * True if it is an output array (description at top)
+        * False if it is an input array
     '''
-    bil = interpolate_grid(
-        input_grid = norm_data[0:4],
-        res = res,
-        interp_func = interpolation.bilinear)
-    return (arr - bil - norm_data[-2])/norm_data[-1]
-
+    if output:
+        avg = interpolate_grid(
+            input_grid = norm_data[0:4],
+            res = res,
+            interp_func = interpolation.bilinear)
+    else:
+        avg = norm_data[-2]
+    # return (arr - bil - norm_data[-2])/norm_data[-1]
+    return (arr - avg)/norm_data[-1]
 
 def _InterpolationError(
     src,
@@ -226,7 +298,6 @@ def _InterpolationError(
         X = src.y_true[:,[0, src.res - 1, src.res * (src.res - 1), src.res ** 2 - 1]]
     else:
         X = src.X
-
 
     # Get error and set to output
     num_samples = len(src)
@@ -314,20 +385,16 @@ def makeBicubicArrays(src):
 
             # set the loc_to_idx dictionary
             nl2i[(year,t,ymin,ymax,xmin,xmax)] = z
-
             z += 1
 
-    # trim ret array
+    # trim ret array, set src.X to ret
     ret = ret[0:z,:]
-
-    # Set src.X to ret
     src.X = ret
 
     # Delete the necessary indecies from the rest of the arrays in the data structure
     src.y_true = np.delete(src.y_true, idx_to_delete, axis = 0)
     src.norm_data = np.delete(src.norm_data, idx_to_delete, axis = 0)
     src.locations = np.delete(src.locations, idx_to_delete, axis = 0)
-
     src.loc_to_idx = nl2i
 
     return src
@@ -391,8 +458,8 @@ def one_hotify(arr):
     return ret
 
 def mapify(loc_to_idx,arr,year,day,res,classification):
-    '''Converts the list of subgrids into a single matrix where every subgrid
-    is in the right location.
+    '''Converts the list of subgrids into a map where each subgrid is in the right
+    location
 
     --------------
     args
@@ -439,7 +506,5 @@ def mapify(loc_to_idx,arr,year,day,res,classification):
                     ret[int(y):int(y_max), int(x):int(x_max)] = arr[idx]
                 else:
                     ret[int(y):int(y_max), int(x):int(x_max)] = np.reshape(arr[idx,:], [res, res])
-
-
     # The returned array is upside down, flip the right way
     return np.flipud(ret)

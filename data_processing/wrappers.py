@@ -68,7 +68,6 @@ class Settings:
         self.num_days = num_days
 
         # Non-passed in attributes
-        self.normalized = False # If the data is normalized or not
         self.parsed = False # If the data has been parsed or not
         self.num_samples = np.nan # Total number of samples parsed
 
@@ -93,7 +92,6 @@ class Settings:
         s += '\tnumber of days: {}\n'.format(self.num_days)
         s += '\tnumber of samples: {}\n'.format(self.num_samples)
         s += '\tdenorm_local? {}\n'.format(self.denorm_local)
-        s += '\tnormalized? {}\n'.format(self.normalized)
         s += '\tparsed? {}\n'.format(self.parsed)
 
         return s
@@ -282,37 +280,6 @@ class DataPreprocessing:
         self.num_samples = z
         logging.info('Total number of samples: {}'.format(z))
 
-    def normalize(self):
-        '''Normalizes all of the data
-        '''
-        if not self.parsed:
-            raise DataPreProcessingError('Cannot normalize data that is not parsed yet')
-        if self.normalized:
-            logging.info('Already normalized')
-            return
-        logging.debug('Normalizing all data')
-        for key in self.keys:
-            logging.debug('key: {}'.format(key))
-            self.subgrids[key] = Normalize_arr(
-                arr = self.subgrids[key], norm_data = self.norm_data[key],
-                res = self.res_in)
-        self.normalized = True
-
-    def denormalize(self):
-        '''Denormalizes all of the data
-        '''
-        if not self.normalized:
-            logging.info('Already denormalized')
-            return
-        logging.debug('Denormalizing all data')
-        for key in self.keys:
-            logging.debug('key: {}'.format(key))
-            self.subgrids[key] = Denormalize_arr(
-                arr = self.subgrids[key], norm_data = self.norm_data[key],
-                res = self.res_in)
-
-        self.normalized = False
-
     def split_data_idxs(self,division_format, **kwargs):
         '''Creates index arrays for testing, validation, and testing sets.
         `division_format` indicates the type of division that is done.
@@ -474,7 +441,6 @@ class DataPreprocessing:
             norm_data = norm_data,
             locations = locations,
             loc_to_idx = loc_to_idx,
-            normalized = self.normalized,
             res = self.res_in)
 
     def save(self, savepath = None):
@@ -591,7 +557,7 @@ class DataWrapper(IOClass):
     '''
 
     def __init__(self, X, input_keys, y_true, output_key,
-        norm_data, locations, loc_to_idx, normalized, res):
+        norm_data, locations, loc_to_idx, res):
         '''
         -----------
         args
@@ -628,8 +594,8 @@ class DataWrapper(IOClass):
         self.norm_data = norm_data
         self.locations = locations
         self.loc_to_idx = loc_to_idx
-        self.y_normalized = normalized
-        self.X_normalized = normalized
+        self.y_normalized = False
+        self.X_normalized = False
         self.res = res
         self.shape = {'X': self.X.shape, 'y_true': self.y_true.shape}
         self.input_size = self.X.shape[1]
@@ -653,30 +619,40 @@ class DataWrapper(IOClass):
         '''
         return self._transform(func, self.y_true)
 
-    def denormalize(self, denorm_X = False, denorm_y = False):
-
-        if self.y_normalized and denorm_y:
+    def denormalize(self, output = None):
+        '''
+        output (bool or None)
+            - If True, denormalize y_true
+            - If False, denormalize X
+            - If None, denormalize both
+        '''
+        if (output is None or output is True) and self.y_normalized:
             self.y_true =  Denormalize(
-                self.y_true, self.norm_data, self.res)
+                self.y_true, self.norm_data, self.res, True)
             self.y_normalized = False
 
-        if self.X_normalized and denorm_X:
-            self.X_normalized = False
+        if (output is None or output is False) and self.X_normalized:
             self.X =  Denormalize(
-                self.X, self.norm_data, self.res)
+                self.X, self.norm_data, self.res, True)
+            self.X_normalized = False
         return self
 
-    def normalize(self, norm_X = False, norm_y = False):
-
-        if (not self.y_normalized) and norm_y:
-            self.y_true =  Denormalize(
-                self.y_true, self.norm_data, self.res)
+    def normalize(self, output = None):
+        '''
+        output (bool or None)
+            - If True, denormalize y_true
+            - If False, denormalize X
+            - If None, denormalize both
+        '''
+        if (output is None or output is True) and not self.y_normalized:
+            self.y_true =  Normalize(
+                self.y_true, self.norm_data, self.res, True)
             self.y_normalized = True
 
-        if (not self.X_normalized) and norm_X:
+        if (output is None or output is False) and not self.X_normalized:
+            self.X =  Normalize(
+                self.X, self.norm_data, self.res, True)
             self.X_normalized = True
-            self.X =  Denormalize(
-                self.X, self.norm_data, self.res)
         return self
 
     def _transform(self, func, arr):

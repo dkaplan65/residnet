@@ -59,11 +59,9 @@ def experiment0():
 	logging.info('Load data')
 	data = wrappers.DataPreprocessing.load('output/datapreprocessing/testing_data_denormLocalFalse_res6/')
 	logging.info('Denormalize')
-	data.denormalize()
 	logging.info('Make array')
 	src = data.make_array(input_keys = ['temp'], output_key = 'temp')
 	logging.info('denormalize')
-	src.denormalize()
 
 	nn_save_loc = 'output/datawrapper/nearest_neighbor_test_error.pkl'
 	bilinear_save_loc = 'output/datawrapper/bilinear_test_error.pkl'
@@ -119,7 +117,6 @@ def experiment1(denorm_local = None):
 	logging.info('loading training data')
 	training_data = wrappers.DataPreprocessing.load(
 		'output/datapreprocessing/training_data_denormLocal{}_res6/'.format(denorm_local))
-	training_data.normalize()
 	logging.info('make training data')
 	train_src = training_data.make_array(output_key = 'temp')
 
@@ -160,20 +157,21 @@ def experiment2(denorm_local = None):
 	# Make the (training, validation, testing)
 	training_data = wrappers.DataPreprocessing.load('output/datapreprocessing/training_data_denormLocal{}_res6/'.format(
 		denorm_local))
-	training_data.normalize()
 	# Split the training_data into both training and validation sets
 	idxs = training_data.split_data_idxs(
 		division_format = 'split',
 		split_dict = {'training': 0.85, 'validation': 0.15},
 		randomize = True)
 	train_src = training_data.make_array(output_key = 'temp', idxs = idxs['training'])
+	train_src.normalize()
 	val_src = training_data.make_array(output_key = 'temp', idxs = idxs['validation'])
+	val_src.normalize()
 
 	# Make the testing data
 	testing_data = wrappers.DataPreprocessing.load('output/datapreprocessing/testing_data_denormLocal{}_res6/'.format(
 		denorm_local))
-	testing_data.normalize()
 	test_src = testing_data.make_array(output_key = 'temp')
+	test_src.normalize()
 	print('norm test_src.y_true[0,:]',test_src.y_true[0,:])
 
 	# Make, train, and save the training performance.
@@ -190,16 +188,15 @@ def experiment2(denorm_local = None):
 	print('norm y_pred[0,:]',y_pred[0,:])
 	# Denormalized prediction
 	y_pred = transforms.Denormalize_arr(
-		arr = y_pred, norm_data = test_src.norm_data, res = test_src.res)
+		arr = y_pred, norm_data = test_src.norm_data, res = test_src.res,
+		output = True)
 	print('denorm y_pred[0,:]',y_pred[0,:])
 
-	test_src.denormalize(denorm_y = True)
+	test_src.denormalize(output = True)
 	print('denorm test_src.y_true[0,:]',test_src.y_true[0,:])
 
 	test_src.y_true -= y_pred
-
 	print(metrics.RMSE(test_src.y_true))
-
 	map = transforms.mapify(
 		loc_to_idx = test_src.loc_to_idx,
 		arr = test_src.y_true,
@@ -229,6 +226,8 @@ def experiment3(denorm_local = None, threshold = None):
 		load_reg_train = False, load_clf_train = True)
 	train_src = d['clf_train_src']
 	test_src = d['test_src']
+	train_src.normalize()
+	test_src.normalize()
 
 	# Make, train, and save the training performance.
 	model = standard_classification_network()
@@ -353,7 +352,7 @@ def experiment6(denorm_local = None, threshold = None):
 	d = load_datawrappers(denorm_local = denorm_local, threshold = threshold,
 		load_reg_train = False, load_clf_train = True)
 
-
+	# TODO
 
 ####################
 # Auxiliary methods
@@ -415,7 +414,6 @@ class generate_preprocess_data:
 			years = years,
 			denorm_local = denorm_local)
 		prep_data.parse_data()
-		prep_data.normalize()
 		prep_data.save()
 		return prep_data
 
@@ -490,10 +488,9 @@ def load_datawrappers(denorm_local, load_reg_train, load_clf_train,
 		training_data = wrappers.DataPreprocessing.load(
 			'output/datapreprocessing/training_data_denormLocal{}_res6/'.format(
 			denorm_local))
-		training_data.normalize()
 		train_src = training_data.make_array(output_key = 'temp')
 		if threshold is not None:
-			train_src.denormalize(denorm_y = True)
+			train_src.denormalize(output = True)
 			train_src = transforms.InterpolationErrorClassification(
 			    src = train_src,
 			    func = interpolation.bilinear,
@@ -508,10 +505,9 @@ def load_datawrappers(denorm_local, load_reg_train, load_clf_train,
 		clf_training_data = wrappers.DataPreprocessing.load(
 			'output/datapreprocessing/clf_training_data_denormLocal{}_res6/'.format(
 			denorm_local))
-		clf_training_data.normalize()
 		clf_train_src = clf_training_data.make_array(output_key = 'temp')
 		if threshold is not None:
-			clf_train_src.denormalize(denorm_y = True)
+			clf_train_src.denormalize(output = True)
 			clf_train_src = transforms.InterpolationErrorClassification(
 			    src = clf_train_src,
 			    func = interpolation.bilinear,
@@ -526,11 +522,10 @@ def load_datawrappers(denorm_local, load_reg_train, load_clf_train,
 	testing_data = wrappers.DataPreprocessing.load(
 		'output/datapreprocessing/testing_data_denormLocal{}_res6/'.format(
 		denorm_local))
-	testing_data.normalize()
 	# test_src = testing_data.make_array(output_key = 'temp')
 	test_src = testing_data.make_array(output_key = 'temp')
 	if threshold is not None:
-		test_src.denormalize(denorm_y = True)
+		test_src.denormalize(output = True)
 		test_src = transforms.InterpolationErrorClassification(
 			src = test_src,
 			func = interpolation.bilinear,
