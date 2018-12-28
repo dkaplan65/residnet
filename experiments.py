@@ -16,11 +16,11 @@ import matplotlib.pyplot as plt
 import logging
 import copy
 
-from data_processing import wrappers, transforms, metrics
-from comparison_methods import classification, interpolation
-import util
-import constants
-import visualization
+from residnet.data_processing import wrappers, transforms, metrics
+from residnet.comparison_methods import classification, interpolation
+from residnet import util
+from residnet import constants
+from residnet import visualization
 
 logging.basicConfig(format = constants.LOGGING_FORMAT, level = logging.INFO)
 default_denorm_local = False
