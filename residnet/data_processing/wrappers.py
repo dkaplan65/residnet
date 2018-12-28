@@ -96,11 +96,8 @@ class Settings:
         return s
 
 class DataPreprocessing:
-    '''
-    Child of the base class `DataPreprocessingBase`.
-
-    Structure for transforming raw HYCOM data into the right data format
-    for doing regression over.
+    '''Preprocesses raw data into subgrids that we can do interpolation and
+    and regression over.
     '''
 
     def __init__(self, name = None, res_in = None, savepath = None,
@@ -233,14 +230,10 @@ class DataPreprocessing:
                             x = res_in * x_
                             # Check if the subgrid is valid.
                             if self._valid(raw_data[year]['temp'][t,y : y + res_in,x : x + res_in].flatten()):
-                                logging.debug('({}:{}, {}:{}) is a valid subgrid'.format(
-                                            x,x+res_in,y,y+res_in))
                                 # Append flattened arrays for each key
                                 for key in self.keys:
-                                    logging.debug('\n\nDataPreprocessing.parse_data: key: `{}`'.format(key))
-                                    self.locations[key][z,:] = [year, t, y, y + res_in, x, x + res_in]
-
                                     # Get corners, calculate statistics, set values
+                                    self.locations[key][z,:] = [year, t, y, y + res_in, x, x + res_in]
                                     self.subgrids[key][z,:] = raw_data.data[year][key][
                                         t, y : y + res_in, x : x + res_in].flatten()
                                     corners = self.subgrids[key][z, corner_idxs]
@@ -249,14 +242,13 @@ class DataPreprocessing:
                                     self.norm_data[key][z,:] = np.array(np.append(corners, [avg, norm]))
 
                                     # log
-                                    logging.debug('subgrids:\n{}\n'.format(self.subgrids[key][z,:]))
-                                    logging.debug('locations:\n{}\n'.format(self.locations[key][z,:]))
-                                    logging.debug('corner_vals:\n{}\n'.format(corners))
-                                    logging.debug('norm_data:\n{}\n'.format(self.norm_data[key][z,:]))
+                                    # logging.debug('subgrids:\n{}\n'.format(self.subgrids[key][z,:]))
+                                    # logging.debug('locations:\n{}\n'.format(self.locations[key][z,:]))
+                                    # logging.debug('corner_vals:\n{}\n'.format(corners))
+                                    # logging.debug('norm_data:\n{}\n'.format(self.norm_data[key][z,:]))
                                 z += 1
         except MaxDays:
-            logging.info('Total number of days read: num_days: {}, year {}, day: {}'.format(num_days,year,t))
-        logging.debug('Trimming arrays')
+            logging.debug('Total number of days read: num_days: {}, year {}, day: {}'.format(num_days,year,t))
         # Trim excess from arrays
         for key in self.keys:
             self.subgrids[key]  = self.subgrids[key][0:z, :]
@@ -762,9 +754,6 @@ class DataWrapper(IOClass):
         self.shuffle()
         return self
 
-################
-# Exception Classes
-################
 class DataProcessingError(Exception):
     pass
 

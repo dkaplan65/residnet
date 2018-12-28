@@ -41,7 +41,6 @@ A description about normalization and denormalization:
         interpolation we subtract the average of the corners. We then do the same thing
         of dividing by the absolute maximum of this difference, which gets the values
         in the range [-1,1].
-
 '''
 
 
@@ -338,9 +337,7 @@ def makeBicubicArrays(src):
     '''
     if (not src.input_keys[0] == src.output_key) or len(src.input_keys) > 1:
         raise ValueError('makeBucubicArrays: src.input_keys is not the same as src.output_key')
-
     src = copy.deepcopy(src)
-
     num_samples = src.X.shape[0]
     res = src.res
 
