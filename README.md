@@ -8,7 +8,7 @@ This repository holds the code that was used to generate the results for the pap
 
 Simple interpolation techniques (bilinear, nearest neighbor, inverse distance weighting) are used in data assimilation to convert from model space to observation space and are known to introduce errors because of their inability to resolve dynamics at the subgrid-scale level - a phenomenon particularly noticeable along fronts and eddies. In data assimilation applications these regions are the most sensitive to noise, and such errors can lead to false ‘corrections’ in the analysis.  
 
-![Residual Error](https://github.com/dkaplan65/residnet/residual_error.png)
+![Residual Error](https://github.com/dkaplan65/residnet/blob/master/residual_error.png)
 
 The result is a reduction in accuracy for any forecasts that use this analysis as initial conditions. The best way to eliminate this error is by increasing the resolution of the model. However, the computational resources needed for this are prohibitive, so an alternate, more computationally feasible approach has to be implemented.
 
