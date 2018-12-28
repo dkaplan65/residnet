@@ -21,9 +21,9 @@ import inspect
 
 import sys
 sys.path.append('..')
-from constants import DEFAULT_INTERP_IDW_P, DEFAULT_DP_RES_IN
-from data_processing import transforms
-from util import MLClass, get_idxs_of_val
+from residnet.constants import DEFAULT_INTERP_IDW_P, DEFAULT_DP_RES_IN
+from residnet.data_processing import transforms
+from residnet.util import MLClass, get_idxs_of_val
 
 def bilinear(corners, loc):
     '''Compute a bilinear interpolation at location `loc` (x,y).

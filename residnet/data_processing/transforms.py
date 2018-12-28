@@ -51,8 +51,8 @@ import numpy as np
 
 import sys
 sys.path.append('..')
-import constants
-from comparison_methods import interpolation
+from residnet.constants import *
+from residnet.comparison_methods import interpolation
 
 ##################
 # Aggregation and Wrapper Functions
@@ -176,8 +176,8 @@ def InterpolationErrorClassification(
 
     threshold (float)
         - The threshold value to compare the output to
-        - If val >= threshold, value is constants.ONE_HOT_GREATER_THAN
-        - else, constants.ONE_HOT_LESS_THAN
+        - If val >= threshold, value is ONE_HOT_GREATER_THAN
+        - else, ONE_HOT_LESS_THAN
 
     use_corners (bool or None)
         - If True, uses corner indecies of y_true instead of src.X
@@ -286,12 +286,12 @@ def _InterpolationError(
         # Just the cost
         if output_size is None:
             out = np.zeros(
-                shape=(len(src),constants.DEFAULT_TRANS_SIZE_INTERP))
+                shape=(len(src),DEFAULT_TRANS_SIZE_INTERP))
         else:
             out = np.zeros(shape=(len(src),output_size))
     else:
         # Two categories for the classification (greater or less than)
-        out = np.zeros(shape=(len(src), constants.DEFAULT_TRANS_SIZE_CLASS))
+        out = np.zeros(shape=(len(src), DEFAULT_TRANS_SIZE_CLASS))
 
     X = None
     if use_corners:
@@ -312,9 +312,9 @@ def _InterpolationError(
 
         else:
             if error >= threshold:
-                out[i,:] = constants.ONE_HOT_GREATER_THAN.copy()
+                out[i,:] = ONE_HOT_GREATER_THAN.copy()
             else:
-                out[i,:] = constants.ONE_HOT_LESS_THAN.copy()
+                out[i,:] = ONE_HOT_LESS_THAN.copy()
 
     src.y_true = out
     return src
@@ -479,8 +479,8 @@ def mapify(loc_to_idx,arr,year,day,res,classification):
     '''
 
     # get max x and max y
-    maxx = constants.LON_LEN
-    maxy = constants.LAT_LEN
+    maxx = LON_LEN
+    maxy = LAT_LEN
     ret = np.zeros(shape=(maxy,maxx)) * np.nan
     logging.debug('Map size: {}'.format(ret.shape))
 

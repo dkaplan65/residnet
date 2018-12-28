@@ -26,10 +26,7 @@ logging.basicConfig(format = constants.LOGGING_FORMAT, level = logging.INFO)
 default_denorm_local = False
 
 def main():
-	# generate_preprocess_data.classifier_training(True)
-	# generate_preprocess_data.testing(True)
-	# generate_preprocess_data.classifier_training(False)
-	# generate_preprocess_data.testing(False)
+	generate_preprocess_data.all()
 
 	experiment2(denorm_local = False)
 	# experiment4(denorm_local = True)
@@ -395,7 +392,7 @@ class generate_preprocess_data:
 			name = 'clf_training_data')
 
 	@classmethod
-	def all_data(cls):
+	def all(cls):
 		'''Generates all the data used in the entire study.
 		'''
 		cls.training(denorm_local = False)

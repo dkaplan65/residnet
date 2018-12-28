@@ -38,6 +38,7 @@ Future versions:
 '''
 import numpy as np
 from sklearn.metrics import confusion_matrix as cm
+
 from .transforms import collapse_one_hot
 
 #############

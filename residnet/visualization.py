@@ -1,12 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import ticker
-import constants
 import copy
 
 import sys
 sys.path.append('..')
-import constants
+from .constants import *
 
 def plot_errors_relative(ax, arr_primary, lst_arrs, lst_labels,
 	label_primary = None, primary_color = None, colors = None,
@@ -48,11 +47,11 @@ def plot_errors_relative(ax, arr_primary, lst_arrs, lst_labels,
 	if len(lst_arrs) != len(lst_labels):
 		raise ValueError('plot_errors_relative: Length of other arrays and labels must be the same')
 	if primary_color is None:
-		primary_color = constants.DEFAULT_VIS_PLOT_REL_PRIM_COLOR
+		primary_color = DEFAULT_VIS_PLOT_REL_PRIM_COLOR
 	if linewidth == None:
-		linewidth = constants.DEFAULT_VIS_PLOT_LINEWIDTH
+		linewidth = DEFAULT_VIS_PLOT_LINEWIDTH
 	if label_primary == None:
-		label_primary = constants.DEFAULT_VIS_PRIMARY_LABEL
+		label_primary = DEFAULT_VIS_PRIMARY_LABEL
 
 	# Start plotting
 	idxs = np.argsort(arr_primary)
@@ -95,7 +94,7 @@ def map(ax, arr, cmap = None, **kwargs):
 
 	# Set the NaNs to grey
 	if cmap == None:
-		cmap = copy.deepcopy(constants.DEFAULT_VIS_CMAP)
+		cmap = copy.deepcopy(DEFAULT_VIS_CMAP)
 	cmap.set_bad(color = 'grey')
 	ax.imshow(arr)
 

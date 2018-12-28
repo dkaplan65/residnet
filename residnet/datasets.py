@@ -5,14 +5,13 @@ import logging
 import numpy as np
 from netCDF4 import Dataset
 
-import constants
-import util
+from .constants import *
 
 def load_hycom(years, keys = None, dtype = None):
-	filepath2d = constants.DEFAULT_DP_FILEPATH2D
-	filepath3d = constants.DEFAULT_DP_FILEPATH3D
-	dtype = constants.DEFAULT_NC_DTYPE
-	keys = constants.DEFAULT_NC_KEYS
+	filepath2d = DEFAULT_DP_FILEPATH2D
+	filepath3d = DEFAULT_DP_FILEPATH3D
+	dtype = DEFAULT_NC_DTYPE
+	keys = DEFAULT_NC_KEYS
 
 	return HYCOM(filepath2d=filepath2d,filepath3d=filepath3d,
 		years=years,read_imm = True,dtype = dtype,keys=keys)
@@ -94,12 +93,12 @@ class _HYCOMYear:
     '''
     def __init__(self,filepath2d,filepath3d,year,
         read_imm = True,keys_ = None,dtype = None):
-        
+
         logging.debug('Object Created')
         if keys_ == None:
-            keys_ = constants.DEFAULT_NC_KEYS
+            keys_ = DEFAULT_NC_KEYS
         if dtype == None:
-            dtype = constants.DEFAULT_NC_DTYPE
+            dtype = DEFAULT_NC_DTYPE
         self.filepath2d = filepath2d
         self.filepath3d = filepath3d
         self.year = year
@@ -152,4 +151,3 @@ class _HYCOMYear:
         logging.debug('Exiting normally')
         f.close()
         return data
-

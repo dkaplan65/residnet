@@ -14,10 +14,9 @@ from .transforms import Denormalize_arr, Normalize_arr
 
 import sys
 sys.path.append('..')
-import util
-from util import IOClass
-import constants
-from datasets import HYCOM
+from residnet.util import *
+from residnet.constants import *
+from residnet.datasets import HYCOM
 
 '''
 Future Versions:
@@ -36,23 +35,23 @@ class Settings:
 
         # Set to default if it was not set during initialization
         if name == None:
-            name = constants.DEFAULT_DP_NAME
+            name = DEFAULT_DP_NAME
         if res_in == None:
-            res_in = constants.DEFAULT_DP_RES_IN
+            res_in = DEFAULT_DP_RES_IN
         if filepath2d == None:
-            filepath2d = constants.DEFAULT_DP_FILEPATH2D
+            filepath2d = DEFAULT_DP_FILEPATH2D
         if filepath3d == None:
-            filepath3d = constants.DEFAULT_DP_FILEPATH3D
+            filepath3d = DEFAULT_DP_FILEPATH3D
         if dataset == None:
-            dataset = constants.DEFAULT_DP_DATASET
+            dataset = DEFAULT_DP_DATASET
         if years == None:
-            years = constants.DEFAULT_DP_YEARS
+            years = DEFAULT_DP_YEARS
         if denorm_local == None:
-            denorm_local = constants.DEFAULT_DP_DENORM_LOCAL
+            denorm_local = DEFAULT_DP_DENORM_LOCAL
         if keys == None:
-            keys = constants.DEFAULT_DP_KEYS
+            keys = DEFAULT_DP_KEYS
         if num_days == None:
-            num_days = constants.DEFAULT_DP_NUM_DAYS
+            num_days = DEFAULT_DP_NUM_DAYS
         if savepath == None:
             savepath = 'output/datapreprocessing/{}_denormLocal{}_res{}/'.format(name,denorm_local,res_in)
 
@@ -79,7 +78,7 @@ class Settings:
         if self.savepath[-1] != '/':
             self.savepath += '/'
 
-        util.check_savepath_valid(self.savepath)
+        check_savepath_valid(self.savepath)
 
     def __str__(self):
         s = 'Settings Object:\n'
@@ -199,7 +198,7 @@ class DataPreprocessing:
         z = 0
         # Loose upper bound of how many subgrids will be parsed in total
         # Will trim at the end
-        num_subgrids = len(self.years) * 366 * constants.DEFAULT_DP_SPD
+        num_subgrids = len(self.years) * 366 * DEFAULT_DP_SPD
         # Initialize the arrays so that we are not constantly appending arrays,
         # instead we are just setting values
         for ele in self.keys:
@@ -402,7 +401,7 @@ class DataPreprocessing:
         if input_keys == None:
             input_keys = self.keys
         if output_key == None:
-            output_key = constants.DEFAULT_DP_OUTPUT_KEY
+            output_key = DEFAULT_DP_OUTPUT_KEY
 
         # (str,int,int,int,int,int) -> int
         loc_to_idx = {}
@@ -418,8 +417,8 @@ class DataPreprocessing:
         X = np.zeros(shape = (num_samples, len(input_keys) * 4))
 
         output_array = np.zeros(shape = (num_samples, self.res_in ** 2))
-        norm_data = np.zeros(shape = (num_samples, constants.NORM_LENGTH))
-        locations = np.zeros(shape = (num_samples, constants.LOCATIONS_LENGTH))
+        norm_data = np.zeros(shape = (num_samples, NORM_LENGTH))
+        locations = np.zeros(shape = (num_samples, LOCATIONS_LENGTH))
 
         for i in range(num_samples):
             idx = idxs[i]
@@ -455,7 +454,7 @@ class DataPreprocessing:
         '''
         if savepath != None:
             self.savepath = savepath
-            util.check_savepath_valid(self.savepath)
+            check_savepath_valid(self.savepath)
             if self.savepath[-1] != '/':
                 self.savepath += '/'
 
@@ -466,17 +465,17 @@ class DataPreprocessing:
         norm_datapath = basepath + 'norm_data.nc'
         settingspath  = basepath + 'settings.pkl'
 
-        util.check_savepath_valid(subgridspath)
-        util.check_savepath_valid(locationspath)
-        util.check_savepath_valid(norm_datapath)
-        util.check_savepath_valid(settingspath)
+        check_savepath_valid(subgridspath)
+        check_savepath_valid(locationspath)
+        check_savepath_valid(norm_datapath)
+        check_savepath_valid(settingspath)
 
         # Save the data - pickle the settings object
         self._save_data_obj_netcdf(subgridspath, self.subgrids)
         self._save_data_obj_netcdf(locationspath, self.locations)
         self._save_data_obj_netcdf(norm_datapath, self.norm_data)
 
-        util.saveobj(self.settings, settingspath)
+        saveobj(self.settings, settingspath)
 
     @classmethod
     def load(cls,loadpath):
@@ -494,7 +493,7 @@ class DataPreprocessing:
         settingspath  = loadpath + 'settings.pkl'
 
         logging.debug('Loading settings')
-        ret = cls(settings = util.loadobj(settingspath))
+        ret = cls(settings = loadobj(settingspath))
         logging.debug('Loading subgrids')
         ret.subgrids  = ret._load_data_obj_netcdf(subgridspath)
         logging.debug('Loading locations')
@@ -504,7 +503,7 @@ class DataPreprocessing:
         return ret
 
     def _load_data_obj_netcdf(self,path):
-        f = Dataset(path, 'r', constants.DEFAULT_DP_NETCDF_FORMAT)
+        f = Dataset(path, 'r', DEFAULT_DP_NETCDF_FORMAT)
         # Get dimensions
         num_samples = len(f.dimensions['num_samples'])
         _dim = len(f.dimensions['_dim'])
@@ -518,7 +517,7 @@ class DataPreprocessing:
         '''Save data in netcdf
         `d` is a ictionary of multidimensional arrays of the same size
         '''
-        data = Dataset(path, 'w', format = constants.DEFAULT_DP_NETCDF_FORMAT)
+        data = Dataset(path, 'w', format = DEFAULT_DP_NETCDF_FORMAT)
         (num_samples, _dim) = d[self.keys[0]].shape
 
         # Create global variables

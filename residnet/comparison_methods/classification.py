@@ -17,8 +17,8 @@ import scipy.stats
 
 import sys
 sys.path.append('..')
-import constants
-from util import MLClass
+from residnet.constants import *
+from residnet.util import MLClass
 
 
 class SKLearnBase(MLClass):
@@ -102,9 +102,9 @@ class KMeansWrapper(SKLearnBase):
             - Number of times to run KMeans with different centroid seeds
         '''
         if kwargs['n_clusters'] == None:
-            kwargs['n_clusters'] = constants.DEFAULT_CLF_N_CLUSTERS
+            kwargs['n_clusters'] = DEFAULT_CLF_N_CLUSTERS
         if kwargs['n_init'] == None:
-            kwargs['n_init'] = constants.DEFAULT_CLF_N_INIT
+            kwargs['n_init'] = DEFAULT_CLF_N_INIT
         SKLearnBase.__init__(
             self,
             name = 'KMeans',
@@ -123,15 +123,15 @@ class LogisticRegressionWrapper(SKLearnBase):
         C (int)
             - Inverse regularization strength
 
-        Class weight is always constants.DEFAULT_CLF_CLASS_WEIGHT
+        Class weight is always DEFAULT_CLF_CLASS_WEIGHT
         '''
         if kwargs['penalty'] == None:
-            kwargs['penalty'] = constants.DEFAULT_CLF_PENALTY
+            kwargs['penalty'] = DEFAULT_CLF_PENALTY
         if kwargs['solver'] == None:
-            kwargs['solver'] = constants.DEFAULT_CLF_SOLVER
+            kwargs['solver'] = DEFAULT_CLF_SOLVER
         if kwargs['C'] == None:
-            kwargs['C'] = constants.DEFAULT_CLF_C
-        kwargs['class_weight'] = constants.DEFAULT_CLF_CLASS_WEIGHT
+            kwargs['C'] = DEFAULT_CLF_C
+        kwargs['class_weight'] = DEFAULT_CLF_CLASS_WEIGHT
         SKLearnBase.__init__(
             self,
             name = 'Logistic Regression',

@@ -9,12 +9,12 @@ import matplotlib.pyplot as plt
 import os
 import pickle
 
-import constants
+from .constants import DEFAULT_UTIL_PICKLE_PROTOCOL
 
 
 def saveobj(obj,filename, protocol=None):
     if protocol is None:
-        protocol = constants.DEFAULT_UTIL_PICKLE_PROTOCOL
+        protocol = DEFAULT_UTIL_PICKLE_PROTOCOL
     check_savepath_valid(filename)
     with open(filename, 'wb') as output:  # Overwrites any existing file.
         pickle.dump(obj, output, protocol)
