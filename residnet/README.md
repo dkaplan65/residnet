@@ -60,26 +60,42 @@ This module has methods for assessing performance of both classification and int
 
 This is one of the core modules because it holds two key classes: `DataPreprocessing` and `DataWrapper`.
 
-The purpose of `DataPreprocessing` is to convert raw input data (most likely from netCDF files) into preprocessed, subgrids with metadata that can be combined into training or evaluation data.
+#### DataPreprocessing
 
-The workflow of `DataPreprocessing` is;
-#### Load and parse the raw data with the function `parse_data`  
-This function loads the raw data and parses it with a single function `parse_data`. This only parses the data into an internal representation. The next step is to transform this into a dataset that you can use for training or for feeding to interpolation methods. You can do this with the function `make_array`.
+The purpose of `DataPreprocessing` is to convert raw input data (most likely from netCDF files) into preprocessed, subgrids with metadata that can be combined into training data, testing data, etc. There are two major functions; `parse_data` and `make_array`.
+
+###### Load and parse the raw data with the function `parse_data`  
+This function loads the raw data and parses it with a single function `parse_data`. This only parses the data into an internal representation.
 
 ###### Optional:
 After you have parsed the data, call the function `split_data_idxs` to divide the data into different categories like 'training', 'testing', etc. This function assigns each subgrid (with respect to its index in the master array in `DataPreprocessing`) to a category that is specified in `split_data_idxs`.   
 
 For example,  
-    $ idxs = split_data_idxs(division_format = 'split', d = {'training': 0.8, 'testing': 0.2}, randomize = True)
-splits the data into two categories: _training_ and _testing_ and assigns 80% of the subgrids randomly to _training_ and 20% of subgrids to _testing_. Once you do this, you can call `make_array` like so:  
+```python
+idxs = dataprerocessing.split_data_idxs(
+    division_format = 'split',
+    d = {'training': 0.8, 'testing': 0.2},
+    randomize = True)  
+```  
+splits the data into two categories: _training_ and _testing_ and assigns 80% of the subgrids randomly to _training_ and 20% of subgrids to _testing_. Once you do this, you can feed these indices into `make_array`.
 
-`array = `
+###### Create a useful dataset with `make_array`
+The next step is to transform this into a dataset that you can use for training or for feeding to interpolation methods. You can do this with the function `make_array`. `make_array` creates a `DataWrapper` object that encapsulates the data. Description of `DataWrapper` below. For example,
 
-The purpose of `DataWrapper` is to be a container for data made by `DataPreprocessing`
+```python
+$ datawrapper = datapreprocessing.make_array(
+    idxs = idxs['testing'])
+```
+
+creates a `DataWrapper` that encapsulates the _testing_ data and this is ready to be fed into an interpolation. The output of this function is a `DataWrapper` where the input data are corner/s data and the output is the truth high resolution subgrid scale data as described in the root README.md. To transform this data into classification data, refer to `data_processing.transforms`. Description about transforms below.
+
+#### DataWrapper
+
+The purpose of `DataWrapper` is to be a container for data made by `DataPreprocessing.make_array`. It keeps all of the data related to normalization, location, input and truth output data, and other metadata together and provides functionality for saving. `DataPreprocessing.make_array` automatically returns a `DataWrapper` object. You use this object to pass around data for interpolation, classification, etc.
 
 ## data_processing/transforms.py
 
-TODO
+This module provides functionality for transforming the data in `DataWrappers` into different types of arrays. One of the most common transforms you'll do is to transform an interpolation truth data into classification data. This can be accomplished by calling the method `transforms.InterpolationErrorClassification`, which creates a one-hot array based on the error of the output given an interpolation method and input data. This module also provides functions that are used for de/normalization, transforming output data into map images, and transforming classification output data to and from one-hot encoding.
 
 ## comparison_methods/*
 
@@ -87,8 +103,22 @@ This package holds modules for both classification and interpolation modules.
 
 ## comparison_methods/interpolation.py
 
-TODO
+This module provides functions and classes that are used for interpolation. Some interpolation methods are:
+
+* Functions
+  * `bilinear`
+  * `bicubic`
+  * `nearest_neighbor`
+  * `idw`  (Inverse-Distance Weighting)
+* Classes
+  * `MLR` (Multiple Linear Regression)
+  * `ClfInterpWrapper` (Classification Interpolation Wrapper)
+    * This class is what was used for _NN-Prep_ in the paper. It divides the input data into different sets based on a classification method. Each set is then applied to a different interpolation method.
 
 ## comparison_methods/classification.py
 
-TODO
+This module provides classes for classification. Many of these classes are wrappers for sklearn objects. This is the list of classification methods:
+
+* `RandomForestWrapper` (Random Forest)
+* `KMeansWrapper` (KMeans)
+* `LogisticRegressionWrapper` (Logistic Regression)

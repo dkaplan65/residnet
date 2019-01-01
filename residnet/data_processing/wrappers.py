@@ -464,7 +464,7 @@ class DataPreprocessing:
         self._save_data_obj_netcdf(locationspath, self.locations)
         self._save_data_obj_netcdf(norm_datapath, self.norm_data)
 
-        saveobj(self.settings.settings, settingspath)
+        saveobj(self.settings, settingspath)
 
     @classmethod
     def load(cls,loadpath):
