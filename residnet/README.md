@@ -1,6 +1,6 @@
 # Description of modules
 
-The purpose of this document is to describe the purpose of the modules and classes used within the code.
+The purpose of this document is to describe the purpose of the modules and classes used within the code. For a more in depth description, look at the code in the module and in the module `../exmaples.py`.
 
 ## Basic workflow
 The basic workflow of how to use this package is as follows:  
@@ -58,7 +58,24 @@ This module has methods for assessing performance of both classification and int
 
 ## data_processing/wrappers.py
 
-TODO
+This is one of the core modules because it holds two key classes: `DataPreprocessing` and `DataWrapper`.
+
+The purpose of `DataPreprocessing` is to convert raw input data (most likely from netCDF files) into preprocessed, subgrids with metadata that can be combined into training or evaluation data.
+
+The workflow of `DataPreprocessing` is;
+#### Load and parse the raw data with the function `parse_data`  
+This function loads the raw data and parses it with a single function `parse_data`. This only parses the data into an internal representation. The next step is to transform this into a dataset that you can use for training or for feeding to interpolation methods. You can do this with the function `make_array`.
+
+###### Optional:
+After you have parsed the data, call the function `split_data_idxs` to divide the data into different categories like 'training', 'testing', etc. This function assigns each subgrid (with respect to its index in the master array in `DataPreprocessing`) to a category that is specified in `split_data_idxs`.   
+
+For example,  
+    $ idxs = split_data_idxs(division_format = 'split', d = {'training': 0.8, 'testing': 0.2}, randomize = True)
+splits the data into two categories: _training_ and _testing_ and assigns 80% of the subgrids randomly to _training_ and 20% of subgrids to _testing_. Once you do this, you can call `make_array` like so:  
+
+`array = `
+
+The purpose of `DataWrapper` is to be a container for data made by `DataPreprocessing`
 
 ## data_processing/transforms.py
 
@@ -66,7 +83,7 @@ TODO
 
 ## comparison_methods/*
 
-This package holds modules for both classification and interpolation modules. 
+This package holds modules for both classification and interpolation modules.
 
 ## comparison_methods/interpolation.py
 

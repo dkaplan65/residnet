@@ -148,24 +148,12 @@ class DataPreprocessing:
         self.norm_data = {} #key -> [avg, range]
 
     def __len__(self):
-        return self.num_samples
+        return self.settings.num_samples
 
     def __str__(self):
         s = str(self.settings)
-        s += 'num samples: {}\n'.format(self.num_samples)
+        s += 'num samples: {}\n'.format(self.settings.num_samples)
         return s
-
-    def __getattr__(self,key):
-        '''This is called as a last resort.
-        '''
-        return self.__dict__['settings'].__dict__[key]
-
-    def __setattr__(self,key,val):
-        if 'settings' in self.__dict__ and \
-            key in self.__dict__['settings'].__dict__:
-            self.__dict__['settings'].__dict__[key] = val
-        else:
-            self.__dict__[key] = val
 
     def _valid(self,arr):
         '''Determines if the array is valid.
@@ -180,29 +168,31 @@ class DataPreprocessing:
         Second, it parses the data into the internal data structure.
         Lastly, it sets normalization factors
         '''
-        if self.parsed:
+        if self.settings.parsed:
             logging.info('Already parsed')
             return
         logging.debug('Reading in raw data.')
 
         # Load the dataset
-        if self.dataset == 'hycom':
-            raw_data = HYCOM(filepath2d = self.filepath2d, filepath3d = self.filepath3d,
-                years = self.years, keys = self.keys)
+        if self.settings.dataset == 'hycom':
+            raw_data = HYCOM(filepath2d = self.settings.filepath2d,
+                filepath3d = self.settings.filepath3d,
+                years = self.settings.years, keys = self.settings.keys)
         else:
-            raise DataProcessingError('DataPreprocessing.parse: dataset `{}` not valid'.format(self.dataset))
+            raise DataProcessingError('DataPreprocessing.parse: dataset `{}` not valid'.format(
+                self.settings.dataset))
 
         logging.debug('Initializing variables.')
-        res_in = self.res_in
+        res_in = self.settings.res_in
         corner_idxs = np.array([0, res_in - 1, res_in * (res_in - 1), res_in * res_in - 1])
         # placeholder for current index
         z = 0
         # Loose upper bound of how many subgrids will be parsed in total
         # Will trim at the end
-        num_subgrids = len(self.years) * 366 * DEFAULT_DP_SPD
+        num_subgrids = len(self.settings.years) * 366 * DEFAULT_DP_SPD
         # Initialize the arrays so that we are not constantly appending arrays,
         # instead we are just setting values
-        for ele in self.keys:
+        for ele in self.settings.keys:
             self.subgrids[ele]  = np.zeros(shape=(num_subgrids, res_in * res_in))
             # [year, day, min_y, max_y, min_x, max_x]
             self.locations[ele] = np.zeros(shape=(num_subgrids, 6))
@@ -225,7 +215,7 @@ class DataPreprocessing:
                         t+1, raw_data[year].num_days,z,n_accepted,time_))
                     n_accepted = 0
                     last_time = time.time()
-                    if num_days >= self.num_days:
+                    if num_days >= self.settings.num_days:
                         raise MaxDays('Maximum number of days parsed.')
                     num_days += 1
                     #Iterate over latitudes
@@ -238,7 +228,7 @@ class DataPreprocessing:
                             if self._valid(raw_data[year]['temp'][t,y : y + res_in,x : x + res_in].flatten()):
                                 # Append flattened arrays for each key
                                 n_accepted += 1
-                                for key in self.keys:
+                                for key in self.settings.keys:
                                     # Get corners, calculate statistics, set values
                                     self.locations[key][z,:] = [year, t, y, y + res_in, x, x + res_in]
                                     self.subgrids[key][z,:] = raw_data.data[year][key][
@@ -257,7 +247,7 @@ class DataPreprocessing:
         except MaxDays:
             logging.debug('Total number of days read: num_days: {}, year {}, day: {}'.format(num_days,year,t))
         # Trim excess from arrays
-        for key in self.keys:
+        for key in self.settings.keys:
             self.subgrids[key]  = self.subgrids[key][0:z, :]
             self.locations[key] = self.locations[key][0:z, :]
             self.norm_data[key] = self.norm_data[key][0:z, :]
@@ -265,17 +255,17 @@ class DataPreprocessing:
         # Setting the normalization constant to be the absolute maximum difference
         # Between the average value and the corners.
         # For each key, get the max norm, set it, and then normalize subgrids if necessary
-        if not self.denorm_local:
+        if not self.settings.denorm_local:
             logging.info('Denorm global')
-            for key in self.keys:
+            for key in self.settings.keys:
                 logging.info('key: {}'.format(key))
                 max_range = np.max(self.norm_data[key][:,-1])
                 logging.info('max_range: {}'.format(max_range))
                 self.norm_data[key][:,-1] = max_range
 
         # Set global variables
-        self.parsed = True
-        self.num_samples = z
+        self.settings.parsed = True
+        self.settings.num_samples = z
         logging.info('Total number of samples: {}'.format(z))
 
     def split_data_idxs(self,division_format, **kwargs):
@@ -309,12 +299,12 @@ class DataPreprocessing:
         valid_formats = ['k-fold','year-fold','split']
         if not division_format in valid_formats:
             raise DataProcessingError('`{}` is an invalid split data format'.format(division_format))
-        idxs = np.arange(self.num_samples)
+        idxs = np.arange(self.settings.num_samples)
         d = {} # return dictionary
 
         if division_format == 'year-fold':
             # Get a random key to look at
-            key_ = self.keys[0]
+            key_ = self.settings.keys[0]
             for i in range(len(self.locations[key_])):
                 y_ = self.locations[key_][i,0]
                 if y_ not in d:
@@ -358,7 +348,7 @@ class DataPreprocessing:
             if i - 1 == len(keys):
                 end = len(keys)
             else:
-                end = int(prev_idx + np.floor(self.num_samples * split[key]))
+                end = int(prev_idx + np.floor(self.settings.num_samples * split[key]))
             ss[key] = (prev_idx, end)
             logging.debug('{} start idx: {}, end idx: {}'.format(
                         key,prev_idx,end))
@@ -386,19 +376,19 @@ class DataPreprocessing:
             - if type(int), make everything up to index `idxs`
             - if it is a list of ints, use these as the indecies to draw them out
         '''
-        if not self.parsed:
+        if not self.settings.parsed:
             raise DataProcessingError('make_array: Data is not parsed yet.')
 
         if idxs is None:
             # Make everything
-            idxs = np.arange(self.num_samples)
+            idxs = np.arange(self.settings.num_samples)
 
         if type(idxs) == int:
             idxs = np.arange(idxs)
 
         # Defaults to all the keys
         if input_keys == None:
-            input_keys = self.keys
+            input_keys = self.settings.keys
         if output_key == None:
             output_key = DEFAULT_DP_OUTPUT_KEY
 
@@ -408,14 +398,14 @@ class DataPreprocessing:
                     len(idxs), input_keys, output_key))
         num_samples = len(idxs)
         corner_idxs = np.array([0,
-                                self.res_in - 1,
-                                self.res_in * (self.res_in - 1),
-                                self.res_in ** 2 - 1])
+                                self.settings.res_in - 1,
+                                self.settings.res_in * (self.settings.res_in - 1),
+                                self.settings.res_in ** 2 - 1])
 
         # Multiplied by 4 because there are 4 corners
         X = np.zeros(shape = (num_samples, len(input_keys) * 4))
 
-        output_array = np.zeros(shape = (num_samples, self.res_in ** 2))
+        output_array = np.zeros(shape = (num_samples, self.settings.res_in ** 2))
         norm_data = np.zeros(shape = (num_samples, NORM_LENGTH))
         locations = np.zeros(shape = (num_samples, LOCATIONS_LENGTH))
 
@@ -439,7 +429,7 @@ class DataPreprocessing:
             norm_data = norm_data,
             locations = locations,
             loc_to_idx = loc_to_idx,
-            res = self.res_in)
+            res = self.settings.res_in)
 
     def save(self, savepath = None):
         '''Save the object. Use netcdf files because the object is potentially
@@ -452,13 +442,13 @@ class DataPreprocessing:
             - If savepath != None, overwrite self.savepath
         '''
         if savepath != None:
-            self.savepath = savepath
-            check_savepath_valid(self.savepath)
-            if self.savepath[-1] != '/':
-                self.savepath += '/'
+            self.settings.savepath = savepath
+            check_savepath_valid(self.settings.savepath)
+            if self.settings.savepath[-1] != '/':
+                self.settings.savepath += '/'
 
         # Make all paths that youre going to save into
-        basepath = self.savepath
+        basepath = self.settings.savepath
         subgridspath  = basepath + 'subgrids.nc'
         locationspath = basepath + 'locations.nc'
         norm_datapath = basepath + 'norm_data.nc'
@@ -474,7 +464,7 @@ class DataPreprocessing:
         self._save_data_obj_netcdf(locationspath, self.locations)
         self._save_data_obj_netcdf(norm_datapath, self.norm_data)
 
-        saveobj(self.settings, settingspath)
+        saveobj(self.settings.settings, settingspath)
 
     @classmethod
     def load(cls,loadpath):
@@ -507,7 +497,7 @@ class DataPreprocessing:
         num_samples = len(f.dimensions['num_samples'])
         _dim = len(f.dimensions['_dim'])
         d = {}
-        for key in self.keys:
+        for key in self.settings.keys:
             d[key] = f.variables[key][:].copy()
         f.close()
         return d
@@ -517,7 +507,7 @@ class DataPreprocessing:
         `d` is a ictionary of multidimensional arrays of the same size
         '''
         data = Dataset(path, 'w', format = DEFAULT_DP_NETCDF_FORMAT)
-        (num_samples, _dim) = d[self.keys[0]].shape
+        (num_samples, _dim) = d[self.settings.keys[0]].shape
 
         # Create global variables
         data.raw_data_source = 'HYCOM GOMl0.04 experiment 20.1, Naval Research Laboratory'
@@ -533,11 +523,11 @@ class DataPreprocessing:
 
         # Create variables
         save_dict = {}
-        for key in self.keys:
+        for key in self.settings.keys:
             save_dict[key] = data.createVariable(key, np.float32, ('num_samples', '_dim'))
 
         # Set variables
-        for key in self.keys:
+        for key in self.settings.keys:
             save_dict[key][:] = d[key]
 
         # Close file
