@@ -18,9 +18,7 @@ import copy
 
 from residnet.data_processing import wrappers, transforms, metrics
 from residnet.comparison_methods import classification, interpolation
-from residnet import util
-from residnet import constants
-from residnet import visualization
+from residnet import util, constants, visualization
 
 logging.basicConfig(format = constants.LOGGING_FORMAT, level = logging.INFO)
 default_denorm_local = False
@@ -28,7 +26,7 @@ default_denorm_local = False
 def main():
 	generate_preprocess_data.all()
 
-	experiment2(denorm_local = False)
+	# experiment2(denorm_local = False)
 	# experiment4(denorm_local = True)
 
 def experiment0():

@@ -238,7 +238,7 @@ def denormalize(arr,norm_data,res,output):
     # return (arr * norm_data[-1] + norm_data[-2]) + bil
     return (arr * norm_data[-1]) + avg
 
-def normalize(arr, norm_data, res):
+def normalize(arr, norm_data, res, output):
     '''
     Normalize a single array
 

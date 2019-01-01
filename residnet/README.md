@@ -66,10 +66,12 @@ TODO
 
 ## comparison_methods/*
 
-TODO
+This package holds modules for both classification and interpolation modules. 
 
 ## comparison_methods/interpolation.py
 
 TODO
 
 ## comparison_methods/classification.py
+
+TODO

@@ -20,6 +20,7 @@ LOCATIONS_LENGTH = 6 # year, t, y_min, y_max, x_min, x_max
 
 # Default values for util
 DEFAULT_UTIL_PICKLE_PROTOCOL = HIGHEST_PROTOCOL
+MAX_BYTES = 2**31 - 1
 
 # Default values for data_processing.wrappers.DataPreprocessing
 DEFAULT_DP_NAME = 'data'

@@ -10,7 +10,8 @@ import pickle
 import logging
 from netCDF4 import Dataset
 
-from .transforms import Denormalize_arr, Normalize_arr
+from .transforms import Denormalize_arr as Denormalize
+from .transforms import Normalize_arr as Normalize
 
 import sys
 sys.path.append('..')
@@ -155,10 +156,13 @@ class DataPreprocessing:
         return s
 
     def __getattr__(self,key):
+        '''This is called as a last resort.
+        '''
         return self.__dict__['settings'].__dict__[key]
 
     def __setattr__(self,key,val):
-        if 'settings' in self.__dict__:
+        if 'settings' in self.__dict__ and \
+            key in self.__dict__['settings'].__dict__:
             self.__dict__['settings'].__dict__[key] = val
         else:
             self.__dict__[key] = val
@@ -207,6 +211,7 @@ class DataPreprocessing:
 
         # Iterate over every position and parse the raw data into the internal data structure
         # Throw an exception once the total number of days has been read.
+        n_accepted = 0
         last_time = time.time()
         try:
             num_days = 0
@@ -216,8 +221,9 @@ class DataPreprocessing:
                 # Iterate over day
                 for t in range(raw_data[year].num_days):
                     time_ = time.time() - last_time
-                    logging.info('Day {} out of {}, z {}, {:.5}s'.format(
-                        t+1, raw_data[year].num_days,z,time_))
+                    logging.info('{}/{}, z {}, n_accpeted: {}, {:.5}s'.format(
+                        t+1, raw_data[year].num_days,z,n_accepted,time_))
+                    n_accepted = 0
                     last_time = time.time()
                     if num_days >= self.num_days:
                         raise MaxDays('Maximum number of days parsed.')
@@ -231,6 +237,7 @@ class DataPreprocessing:
                             # Check if the subgrid is valid.
                             if self._valid(raw_data[year]['temp'][t,y : y + res_in,x : x + res_in].flatten()):
                                 # Append flattened arrays for each key
+                                n_accepted += 1
                                 for key in self.keys:
                                     # Get corners, calculate statistics, set values
                                     self.locations[key][z,:] = [year, t, y, y + res_in, x, x + res_in]
@@ -619,12 +626,14 @@ class DataWrapper(IOClass):
         '''
         if (output is None or output is True) and self.y_normalized:
             self.y_true =  Denormalize(
-                self.y_true, self.norm_data, self.res, True)
+                arr = self.y_true, norm_data = self.norm_data, res = self.res,
+                output = True)
             self.y_normalized = False
 
         if (output is None or output is False) and self.X_normalized:
             self.X =  Denormalize(
-                self.X, self.norm_data, self.res, True)
+                arr = self.X, norm_data = self.norm_data, res = self.res,
+                output = False)
             self.X_normalized = False
         return self
 
@@ -637,12 +646,14 @@ class DataWrapper(IOClass):
         '''
         if (output is None or output is True) and not self.y_normalized:
             self.y_true =  Normalize(
-                self.y_true, self.norm_data, self.res, True)
+                arr = self.y_true, norm_data = self.norm_data, res = self.res,
+                output = True)
             self.y_normalized = True
 
         if (output is None or output is False) and not self.X_normalized:
             self.X =  Normalize(
-                self.X, self.norm_data, self.res, True)
+                arr = self.X, norm_data = self.norm_data, res = self.res,
+                output = False)
             self.X_normalized = True
         return self
 

@@ -7,22 +7,34 @@ import logging
 import datetime
 import matplotlib.pyplot as plt
 import os
+import sys
 import pickle
+import json
 
-from .constants import DEFAULT_UTIL_PICKLE_PROTOCOL
+from .constants import DEFAULT_UTIL_PICKLE_PROTOCOL, MAX_BYTES
 
 
-def saveobj(obj,filename, protocol=None):
+def saveobj(obj, filename, protocol=None):
+    '''pickle backend
+    '''
     if protocol is None:
         protocol = DEFAULT_UTIL_PICKLE_PROTOCOL
     check_savepath_valid(filename)
-    with open(filename, 'wb') as output:  # Overwrites any existing file.
-        pickle.dump(obj, output, protocol)
+    bytes_out = pickle.dumps(obj)
+    with open(filename, 'wb') as f_out:
+        for idx in range(0, len(bytes_out), MAX_BYTES):
+            f_out.write(bytes_out[idx: idx + MAX_BYTES])
 
 def loadobj(filename):
+    '''pickle backend
+    '''
     check_savepath_valid(filename)
-    with open(filename, 'rb') as input_file:
-        e = pickle.load(input_file)
+    bytes_in = bytearray(0)
+    input_size = os.path.getsize(filename)
+    with open(filename, 'rb') as f_in:
+        for _ in range(0, input_size, MAX_BYTES):
+            bytes_in += f_in.read(MAX_BYTES)
+    e = pickle.loads(bytes_in)
     return e
 
 def check_savepath_valid(filepath, create_filepath = True):

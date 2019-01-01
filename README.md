@@ -51,3 +51,8 @@ For questions, email dkaplan4 [at] terpmail [dot] umd [dot] edu.
 
 ## License Information
 Copyright 2018 David Kaplan and Dr. Stephen Penny. Released under the GNU General Public License version 3.0, see LICENSE.txt.
+
+## Future Features
+* Zip saved files
+* Parallelize code where it makes sense
+  * de/normalization, preprocessing, transforms
