@@ -122,11 +122,11 @@ def map_over_time(src, cmap, **kwargs):
 		- classification error over time
 		- interpolation error over time
 		- subgrid classification over time
+		- etc.
 
 	src (data_processing.wrappers.DataWrapper)
-		- Stores the data
+		- Data
 	'''
-
 	raise NotImplemented
 
 def set_ax_labels(ax, title = None, title_size = None, xlabel = None,

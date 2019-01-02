@@ -127,7 +127,7 @@ def InterpolationErrorRegression(
         - If None, defaults to the size for interpoation (1)
 
     use_corners (bool or None)
-        - If True, uses corner indecies of y_true instead of src.X
+        - If True, uses corner indices of y_true instead of src.X
         - This is useful if you have the input (src.X) from multiple different sources
           (e.g. temperature and salinity)
     ---------
@@ -179,7 +179,7 @@ def InterpolationErrorClassification(
         - else, ONE_HOT_LESS_THAN
 
     use_corners (bool or None)
-        - If True, uses corner indecies of y_true instead of src.X
+        - If True, uses corner indices of y_true instead of src.X
         - This is useful if you have the input (src.X) from multiple different sources
           (e.g. temperature and salinity)
     ---------
@@ -341,7 +341,7 @@ def makeBicubicArrays(src):
     num_samples = src.X.shape[0]
     res = src.res
 
-    # Keeps track of the indecies to delete at the end
+    # Keeps track of the indices to delete at the end
     idx_to_delete = []
 
     # generate a new loc_to_idx dictionary
@@ -388,7 +388,7 @@ def makeBicubicArrays(src):
     ret = ret[0:z,:]
     src.X = ret
 
-    # Delete the necessary indecies from the rest of the arrays in the data structure
+    # Delete the necessary indices from the rest of the arrays in the data structure
     src.y_true = np.delete(src.y_true, idx_to_delete, axis = 0)
     src.norm_data = np.delete(src.norm_data, idx_to_delete, axis = 0)
     src.locations = np.delete(src.locations, idx_to_delete, axis = 0)
@@ -473,6 +473,9 @@ def mapify(loc_to_idx,arr,year,day,res,classification):
     res (int)
         - Resolution that the grid was subsampled at
         - Indicates the way to reshape the flattened subgrid
+    classification (bool)
+        - If True, indicates that arr is a classification array
+        - If Falase, indicates that arr is an interpolation array
     '''
 
     # get max x and max y

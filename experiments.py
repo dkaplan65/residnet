@@ -25,7 +25,6 @@ default_denorm_local = False
 
 def main():
 	generate_preprocess_data.all()
-
 	# experiment2(denorm_local = False)
 	# experiment4(denorm_local = True)
 
@@ -90,7 +89,7 @@ def experiment0():
 	logging.info('Start bicubic')
 	bicubic = transforms.InterpolationErrorRegression(
 		src = transforms.makeBicubicArrays(copy.deepcopy(src)),
-		func = interpolation.nearest_neighbor,
+		func = interpolation.bicubic,
 		cost = metrics.Error,
 		output_size = src.res ** 2)
 	bicubic.save(bicubic_save_loc)
@@ -347,7 +346,7 @@ def experiment6(denorm_local = None, threshold = None):
 	d = load_datawrappers(denorm_local = denorm_local, threshold = threshold,
 		load_reg_train = False, load_clf_train = True)
 
-	# TODO
+
 
 ####################
 # Auxiliary methods
@@ -533,5 +532,4 @@ def load_datawrappers(denorm_local, load_reg_train, load_clf_train,
 		'clf_train_src': clf_train_src}
 
 
-if __name__ == '__main__':
-	main()
+if __name__ == '__main__': main()

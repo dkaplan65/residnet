@@ -83,7 +83,7 @@ splits the data into two categories: _training_ and _testing_ and assigns 80% of
 The next step is to transform this into a dataset that you can use for training or for feeding to interpolation methods. You can do this with the function `make_array`. `make_array` creates a `DataWrapper` object that encapsulates the data. Description of `DataWrapper` below. For example,
 
 ```python
-$ datawrapper = datapreprocessing.make_array(
+datawrapper = datapreprocessing.make_array(
     idxs = idxs['testing'])
 ```
 

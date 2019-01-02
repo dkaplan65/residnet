@@ -371,7 +371,7 @@ class ClfInterpWrapper(MLClass):
 
         self.out_len = y.shape[1]
         ret = self.clf.predict(X)
-        # get the indecies for each regression
+        # get the indices for each regression
         for key,val in self.regs.items():
             ind = get_idxs_of_val(arr = ret, val = val)
             self.regs[key].fit(X = X[ind], y = y[ind])

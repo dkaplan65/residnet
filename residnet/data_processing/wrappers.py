@@ -1,6 +1,10 @@
 '''
 Author: David Kaplan
 Advisor: Stephen Penny
+
+Since the amount of memory that a typical `DataPreprocessing` object is >> 4Gb,
+we need to make a custom saving method using netCDF files and separate the
+attributes into a different object.
 '''
 import numpy as np
 import time
@@ -282,7 +286,7 @@ class DataPreprocessing:
             - `split`: `split_dict` (dict key -> floats), `randomize` (bool)
                 * Splits the data into the proportion indicated by the values of the dictionary.
                 * All the floats must be positive, greater than zero.
-                * If `randomize` is True, it also shuffles the indecies
+                * If `randomize` is True, it also shuffles the indices
                 # Example split:
                     - split_dict = {'training': 0.7, 'validation': 0.1, 'testing': 0.2}
                     - 70% to training, 10% to validation, 20% to testing
@@ -334,7 +338,7 @@ class DataPreprocessing:
                 raise DataProcessingError('Improper arguments for Random. Improper values for lst')
 
         if randomize:
-            logging.debug('Shuffling base array indecies')
+            logging.debug('Shuffling base array indices')
             np.random.shuffle(idxs)
 
         ss = {}
@@ -366,7 +370,7 @@ class DataPreprocessing:
         Returns the truth of the input and the denormalization information
         as well.
 
-        Only makes the array for the designated indecies passed in (idx).
+        Only makes the array for the designated indices passed in (idx).
         If `idxs` are not set, make everything.
         Creates a dictionary that maps the locations of the subgrids to the
         place where it is put in the return datastructure.
@@ -374,7 +378,7 @@ class DataPreprocessing:
         idxs (int, list(int), None)
             - if None, make everything
             - if type(int), make everything up to index `idxs`
-            - if it is a list of ints, use these as the indecies to draw them out
+            - if it is a list of ints, use these as the indices to draw them out
         '''
         if not self.settings.parsed:
             raise DataProcessingError('make_array: Data is not parsed yet.')
@@ -667,7 +671,7 @@ class DataWrapper(IOClass):
     def delete_idxs(self, idxs):
         '''OPPOSITE OF `keep_idxs`
 
-        Deletes the indecies that are specified in `idxs`.
+        Deletes the indices that are specified in `idxs`.
 
         This is useful when you want to divide up a set of data into subsets
         based on some preprocessing like clustering.
@@ -686,7 +690,7 @@ class DataWrapper(IOClass):
     def keep_idxs(self, idxs):
         '''OPPOSITE OF `delete_idxs`
 
-        Keeps only the indecies that are specified in `idxs`.
+        Keeps only the indices that are specified in `idxs`.
 
         This is useful when you want to divide up a set of data into subsets
         based on some preprocessing like clustering.
@@ -717,9 +721,9 @@ class DataWrapper(IOClass):
         Set up function to allow batch retrieval of data
         We cannot shuffle the original dataset because it would
         mess up the `loc_to_idx` dictionary. Instead, we shuffle a
-        list of indecies that we use to index the main arrays.
+        list of indices that we use to index the main arrays.
 
-        All functions are applied to an array of indecies.
+        All functions are applied to an array of indices.
             - shuffle
                 * shuffle the index array
             - get_batch

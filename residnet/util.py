@@ -110,7 +110,6 @@ class IOClass:
     def save(self, filename):
         '''If filename is not None, override the internal save location.
         '''
-
         saveobj(self,filename)
 
     @classmethod
