@@ -24,9 +24,8 @@ logging.basicConfig(format = constants.LOGGING_FORMAT, level = logging.INFO)
 default_denorm_local = False
 
 def main():
-	generate_preprocess_data.all()
-	# experiment2(denorm_local = False)
-	# experiment4(denorm_local = True)
+	experiment1(False)
+	experiment0(True)
 
 def experiment0():
 	'''Experiment 0:
@@ -51,11 +50,11 @@ def experiment0():
 	# It doesn't matter whether we do denorm local or global
 	logging.info('Entering experiment 0')
 	logging.info('Load data')
-	data = wrappers.DataPreprocessing.load('output/datapreprocessing/testing_data_denormLocalFalse_res6/')
-	logging.info('Denormalize')
+	data = wrappers.DataPreprocessing.load('output/datapreprocessing/testing_data_'
+		'denormLocalFalse_res6/')
 	logging.info('Make array')
-	src = data.make_array(input_keys = ['temp'], output_key = 'temp')
-	logging.info('denormalize')
+	src = data.make_array(input_keys = ['temp'], output_key = 'temp',
+		norm_input = False)
 
 	nn_save_loc = 'output/datawrapper/nearest_neighbor_test_error.pkl'
 	bilinear_save_loc = 'output/datawrapper/bilinear_test_error.pkl'
@@ -86,13 +85,13 @@ def experiment0():
 		output_size = src.res ** 2)
 	idw.save(idw_save_loc)
 
-	logging.info('Start bicubic')
-	bicubic = transforms.InterpolationErrorRegression(
-		src = transforms.makeBicubicArrays(copy.deepcopy(src)),
-		func = interpolation.bicubic,
-		cost = metrics.Error,
-		output_size = src.res ** 2)
-	bicubic.save(bicubic_save_loc)
+	# logging.info('Start bicubic')
+	# bicubic = transforms.InterpolationErrorRegression(
+	# 	src = transforms.makeBicubicArrays(copy.deepcopy(src)),
+	# 	func = interpolation.bicubic,
+	# 	cost = metrics.Error,
+	# 	output_size = src.res ** 2)
+	# bicubic.save(bicubic_save_loc)
 
 def experiment1(denorm_local = None):
 	'''Experiment 1:
@@ -104,22 +103,27 @@ def experiment1(denorm_local = None):
 		denorm_local = default_denorm_local
 
 	logging.info('denorm_local: {}'.format(denorm_local))
-	mlr_error_save_loc = 'output/datawrapper/mlr_test_error_denormLocal{}.pkl'.format(denorm_local)
-	mlr_model_save_loc = 'output/models/mlr_denormLocal{}.pkl'.format(denorm_local)
+	mlr_error_save_loc = 'output/datawrapper/mlr_test_error_' \
+		'denormLocal{}.pkl'.format(denorm_local)
+	mlr_model_save_loc = 'output/models/mlr_denorm' \
+		'Local{}.pkl'.format(denorm_local)
 
 	# Make the data
 	logging.info('loading training data')
 	training_data = wrappers.DataPreprocessing.load(
-		'output/datapreprocessing/training_data_denormLocal{}_res6/'.format(denorm_local))
+		'output/datapreprocessing/training_data_denorm' \
+		'Local{}_res6/'.format(denorm_local))
 	logging.info('make training data')
 	train_src = training_data.make_array(output_key = 'temp')
+	train_src.normalize()
 
 	logging.info('loading testing data')
 	testing_data = wrappers.DataPreprocessing.load(
-		'output/datapreprocessing/testing_data_denormLocal{}_res6/'.format(denorm_local))
-	testing_data.normalize()
+		'output/datapreprocessing/testing_data_denorm' \
+		'Local{}_res6/'.format(denorm_local))
 	logging.info('make testing data')
 	test_src = testing_data.make_array(output_key = 'temp')
+	test_src.normalize()
 
 	# Train the model and then predict the testing data
 	logging.info('Run MLR')
@@ -132,9 +136,10 @@ def experiment1(denorm_local = None):
 
 	# Set y_true to the denormalized difference between MLR and truth
 	y_pred = transforms.Denormalize_arr(
-		arr = y_pred, norm_data = test_src.norm_data, res = test_src.res)
+		arr = y_pred, norm_data = test_src.norm_data, res = test_src.res,
+		output = True)
 
-	test_src.denormalize(denorm_y = True)
+	test_src.denormalize(output = True)
 	test_src.y_true -= y_pred
 	test_src.save(mlr_error_save_loc)
 
@@ -211,7 +216,7 @@ def experiment3(denorm_local = None, threshold = None):
 		denorm_local = default_denorm_local
 	if threshold is None:
 		# Defaults to the mean bilinear mean RMSE
-		threshold = 0.103
+		threshold = 0.12
 
 	nn_error_save_loc = 'output/datawrapper/nn_rmse_test_error.pkl'
 	nn_model_save_loc = 'output/models/nn_rmse.h5'
@@ -272,7 +277,7 @@ def experiment4(denorm_local = None, threshold = None):
 		denorm_local = default_denorm_local
 	if threshold is None:
 		# Defaults to the mean bilinear mean RMSE
-		threshold = 0.103
+		threshold = 0.12
 
 	nn_error_save_loc = 'output/datawrapper/nn_rmse_test_error.pkl'
 	nn_model_save_loc = 'output/models/nn_rmse.h5'

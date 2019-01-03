@@ -51,6 +51,7 @@ import numpy as np
 import sys
 sys.path.append('..')
 from residnet.constants import *
+from residnet.util import *
 from residnet.comparison_methods import interpolation
 
 ##################
@@ -294,7 +295,7 @@ def _InterpolationError(
 
     X = None
     if use_corners:
-        X = src.y_true[:,[0, src.res - 1, src.res * (src.res - 1), src.res ** 2 - 1]]
+        X = src.y_true[:,gen_corner_idxs(src.res)]
     else:
         X = src.X
 
@@ -376,9 +377,22 @@ def makeBicubicArrays(src):
             ul = src.X[src.loc_to_idx[ulquad]]
             ur = src.X[src.loc_to_idx[urquad]]
 
+            if z == 0:
+                print('ll', ll)
+                print('lr', lr)
+                print('ul', ul)
+                print('ur', ur)
+
             # piece together data into the right order
-            ret[z,:] = np.array([ll[0], ll[1], lr[0], lr[1],ll[2],ll[3],lr[2],lr[3],
-                                 ul[0], ul[1], ur[0], ur[1],ul[2],ul[3],ur[2],ur[3]])
+            ret[z,:] = np.array(
+                [ll[0], ll[1], lr[0], lr[1],
+                 ll[2], ll[3], lr[2], lr[3],
+                 ul[0], ul[1], ur[0], ur[1],
+                 ul[2], ul[3], ur[2], ur[3]])
+                # [ll[0], ll[2], lr[0], lr[2],
+                #  ll[1], ll[3], lr[1], lr[3],
+                #  ul[0], ul[2], ur[0], ur[2],
+                #  ul[1], ul[3], ur[1], ur[3]])
 
             # set the loc_to_idx dictionary
             nl2i[(year,t,ymin,ymax,xmin,xmax)] = z

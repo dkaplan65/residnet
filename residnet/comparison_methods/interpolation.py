@@ -26,15 +26,15 @@ from residnet.data_processing import transforms
 from residnet.util import MLClass, get_idxs_of_val
 
 def bilinear(corners, loc):
-    '''Compute a bilinear interpolation at location `loc` (x,y).
+    '''Compute a bilinear interpolation at location `loc` (ai,aj).
     Assume corners are in order [ll,lr,ul,ur]
     Ignore kwargs
     '''
     (ai,aj) = loc
-    return ((corners[0]*(1-ai)*(1-aj))+
-           (corners[1]*ai*(1-aj))+
-           (corners[2]*(1-ai)*aj)+
-           (corners[3]*ai*aj))
+    return ((corners[0]*(1-ai)*(1-aj))+ \
+        (corners[1]*ai*(1-aj))+ \
+        (corners[2]*(1-ai)*aj)+ \
+        (corners[3]*ai*aj))
 
 def nearest_neighbor(corners, loc):
     '''Computes a nearest neighbor interpolation at the location `loc` (x, y).

@@ -98,6 +98,13 @@ def get_idxs_of_val(arr, val):
     else:
         return np.where(arr == val)[0]
 
+def gen_corner_idxs(res):
+    '''Generate corner indices in the order [ll,lr,ul,ur] based on the resolution
+    `res`
+    '''
+    return np.array([0, res*(res-1), res-1, res**2-1])
+
+
 class IOClass:
     '''Base class
     Defines saving, loading with pickle.

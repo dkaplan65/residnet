@@ -17,7 +17,7 @@ from residnet import constants, visualization, util
 logging.basicConfig(format = constants.LOGGING_FORMAT, level = logging.INFO)
 
 def main():
-    ex2()
+    debug_bicubic()
 
 def ex1():
     '''Load raw HYCOM data and parse from scratch. Save.
@@ -110,7 +110,7 @@ def ex4():
         src = training,
         func = interpolation.bilinear,
         cost = RMSE,
-        threshold = 0.1):
+        threshold = 0.1)
 
     # `out` is now a `wrapper.DataWrapper` object where the input is the same as
     # `training` and the output is a one-hot array based on the bilinear interpolation
@@ -164,7 +164,46 @@ def ex5():
 
     plt.show()
 
+def debug_bicubic():
+    src = wrappers.DataPreprocessing(
+        name = 'sample',
+        years = ['2005'],
+        denorm_local = False,
+        num_days = 1)
+    src.parse_data()
 
+    src = src.make_array(
+        input_keys = ['temp'], output_key = 'temp')
+
+    print('truth\n',src.y_true[0])
+
+    src = transforms.makeBicubicArrays(copy.deepcopy(src))
+    bicubic = transforms.InterpolationErrorRegression(
+        src = src,
+        func = interpolation.bicubic,
+        cost = metrics.Error,
+        output_size = src.res ** 2)
+
+    res_in = 6
+    corner_idxs = util.gen_corner_idxs(res_in)
+
+    print('bicubic error\n', bicubic.y_true[0].reshape(6,6))
+    print('\nin bicubic\n', bicubic.X[0])
+    print('\nbicubic output {}\n'.format(
+        transforms.interpolate_grid(
+            input_grid = bicubic.X[0],
+            res = bicubic.res,
+            interp_func = interpolation.bicubic).reshape(6,6)))
+
+    print('\nnorm data\n', bicubic.norm_data[0])
+    print('\nbicubic error\n', metrics.RMSE(bicubic.y_true[0]))
+
+
+    a = np.apply_along_axis(
+        metrics.RMSE,
+        axis = 1,
+        arr = bicubic.y_true)
+    print('Mean RMSE bicubic: {}'.format(np.mean(a)))
 
 
 

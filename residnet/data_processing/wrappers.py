@@ -188,7 +188,7 @@ class DataPreprocessing:
 
         logging.debug('Initializing variables.')
         res_in = self.settings.res_in
-        corner_idxs = np.array([0, res_in - 1, res_in * (res_in - 1), res_in * res_in - 1])
+        corner_idxs = gen_corner_idxs(res_in)
         # placeholder for current index
         z = 0
         # Loose upper bound of how many subgrids will be parsed in total
@@ -365,7 +365,7 @@ class DataPreprocessing:
         return d
 
     def make_array(self,idxs = None,input_keys = None,
-        output_key = None):
+        output_key = None, norm_input = True):
         '''Concatenates the corners together to form the input.
         Returns the truth of the input and the denormalization information
         as well.
@@ -401,10 +401,7 @@ class DataPreprocessing:
         logging.debug('num samples: {}, input_keys: {}, output_key: {}'.format(
                     len(idxs), input_keys, output_key))
         num_samples = len(idxs)
-        corner_idxs = np.array([0,
-                                self.settings.res_in - 1,
-                                self.settings.res_in * (self.settings.res_in - 1),
-                                self.settings.res_in ** 2 - 1])
+        corner_idxs = gen_corner_idxs(self.settings.res_in)
 
         # Multiplied by 4 because there are 4 corners
         X = np.zeros(shape = (num_samples, len(input_keys) * 4))
@@ -414,10 +411,16 @@ class DataPreprocessing:
         locations = np.zeros(shape = (num_samples, LOCATIONS_LENGTH))
 
         for i in range(num_samples):
+            if i % 50000 == 0:
+                logging.info('{}/{}'.format(i,num_samples))
             idx = idxs[i]
-            arr = []
+            arr = np.array([])
             for key in input_keys:
-                arr += list(self.subgrids[key][idx,corner_idxs])
+                temp_arr = np.array(self.subgrids[key][idx,corner_idxs])
+                if norm_input:
+                    temp_arr = (temp_arr - self.norm_data[key][idx,-2])/ \
+                        self.norm_data[key][idx,-1]
+                arr = np.append(arr, temp_arr)
             X[i,:] = arr.copy()
             output_array[i,:] = self.subgrids[output_key][idx,:]
             norm_data[i,:] = self.norm_data[output_key][idx,:]
