@@ -24,8 +24,8 @@ logging.basicConfig(format = constants.LOGGING_FORMAT, level = logging.INFO)
 default_denorm_local = False
 
 def main():
-	experiment1(False)
-	experiment0(True)
+	experiment2(False)
+	experiment2(True)
 
 def experiment0():
 	'''Experiment 0:
@@ -103,8 +103,8 @@ def experiment1(denorm_local = None):
 		denorm_local = default_denorm_local
 
 	logging.info('denorm_local: {}'.format(denorm_local))
-	mlr_error_save_loc = 'output/datawrapper/mlr_test_error_' \
-		'denormLocal{}.pkl'.format(denorm_local)
+	mlr_error_save_loc = 'output/datawrapper/mlr_denormLocal{}' \
+		'_test_error.pkl'.format(denorm_local)
 	mlr_model_save_loc = 'output/models/mlr_denorm' \
 		'Local{}.pkl'.format(denorm_local)
 
@@ -148,30 +148,31 @@ def experiment2(denorm_local = None):
 	'''
 	if denorm_local is None:
 		denorm_local = default_denorm_local
-	nn_error_save_loc = 'output/datawrapper/nn_lores_test_error_denormLocal{}.pkl'.format(denorm_local)
-	nn_model_save_loc = 'output/models/nn_lores.h5'
-
+	nn_error_save_loc = 'output/datawrapper/nn_lores_denormLocal{}_test_error.pkl' \
+		''.format(denorm_local)
+	nn_model_save_loc = 'output/models/nn_lores_denormLocal{}.h5'.format(denorm_local)
 	logging.info('denorm local {}'.format(denorm_local))
 
-	# Make the (training, validation, testing)
-	training_data = wrappers.DataPreprocessing.load('output/datapreprocessing/training_data_denormLocal{}_res6/'.format(
-		denorm_local))
+	# Make the training and validation data
+	logging.info('loading training data')
+	training_data = wrappers.DataPreprocessing.load(
+		'output/datapreprocessing/training_data_denorm' \
+		'Local{}_res6/'.format(denorm_local))
 	# Split the training_data into both training and validation sets
-	idxs = training_data.split_data_idxs(
-		division_format = 'split',
-		split_dict = {'training': 0.85, 'validation': 0.15},
-		randomize = True)
+	idxs = training_data.split_data_idxs(division_format = 'split',
+		split_dict = {'training': 0.85, 'validation': 0.15}, randomize = True)
 	train_src = training_data.make_array(output_key = 'temp', idxs = idxs['training'])
-	train_src.normalize()
+	train_src.normalize(output=True)
 	val_src = training_data.make_array(output_key = 'temp', idxs = idxs['validation'])
-	val_src.normalize()
+	val_src.normalize(output=True)
 
-	# Make the testing data
-	testing_data = wrappers.DataPreprocessing.load('output/datapreprocessing/testing_data_denormLocal{}_res6/'.format(
-		denorm_local))
+	logging.info('loading testing data')
+	testing_data = wrappers.DataPreprocessing.load(
+		'output/datapreprocessing/testing_data_denorm' \
+		'Local{}_res6/'.format(denorm_local))
+	logging.info('make testing data')
 	test_src = testing_data.make_array(output_key = 'temp')
-	test_src.normalize()
-	print('norm test_src.y_true[0,:]',test_src.y_true[0,:])
+	test_src.normalize(output = True)
 
 	# Make, train, and save the training performance.
 	model = standard_regression_network()
@@ -195,7 +196,8 @@ def experiment2(denorm_local = None):
 	print('denorm test_src.y_true[0,:]',test_src.y_true[0,:])
 
 	test_src.y_true -= y_pred
-	print(metrics.RMSE(test_src.y_true))
+	test_src.save(nn_error_save_loc)
+	print(np.mean(metrics.RMSE(test_src.y_true)))
 	map = transforms.mapify(
 		loc_to_idx = test_src.loc_to_idx,
 		arr = test_src.y_true,
@@ -207,8 +209,6 @@ def experiment2(denorm_local = None):
 	plt.imshow(map)
 	plt.show()
 
-	test_src.save(nn_error_save_loc)
-
 def experiment3(denorm_local = None, threshold = None):
 	'''Trains the classification preprocess nn (NN-RMSE) with threshold `threshold`
 	'''
@@ -218,15 +218,30 @@ def experiment3(denorm_local = None, threshold = None):
 		# Defaults to the mean bilinear mean RMSE
 		threshold = 0.12
 
-	nn_error_save_loc = 'output/datawrapper/nn_rmse_test_error.pkl'
+	nn_error_save_loc = 'output/datawrapper/nn_rmse_denormLocal{}_test_error.pkl' \
+		''.format(denorm_local)
 	nn_model_save_loc = 'output/models/nn_rmse.h5'
 
-	d = load_datawrappers(denorm_local = denorm_local, threshold = threshold,
-		load_reg_train = False, load_clf_train = True)
-	train_src = d['clf_train_src']
-	test_src = d['test_src']
-	train_src.normalize()
-	test_src.normalize()
+	# Make the training and validation data
+	logging.info('loading training data')
+	training_data = wrappers.DataPreprocessing.load(
+		'output/datapreprocessing/training_data_denorm' \
+		'Local{}_res6/'.format(denorm_local))
+	# Split the training_data into both training and validation sets
+	idxs = training_data.split_data_idxs(division_format = 'split',
+		split_dict = {'training': 0.85, 'validation': 0.15}, randomize = True)
+	train_src = training_data.make_array(output_key = 'temp', idxs = idxs['training'])
+	train_src.normalize(output=True)
+	val_src = training_data.make_array(output_key = 'temp', idxs = idxs['validation'])
+	val_src.normalize(output=True)
+
+	logging.info('loading testing data')
+	testing_data = wrappers.DataPreprocessing.load(
+		'output/datapreprocessing/testing_data_denorm' \
+		'Local{}_res6/'.format(denorm_local))
+	logging.info('make testing data')
+	test_src = testing_data.make_array(output_key = 'temp')
+	test_src.normalize(output = True)
 
 	# Make, train, and save the training performance.
 	model = standard_classification_network()
@@ -234,7 +249,7 @@ def experiment3(denorm_local = None, threshold = None):
 	model.fit(
 		train_src.X,
 		train_src.y_true,
-		# validation_data = (val_src.X, val_src.y_true),
+		validation_data = (val_src.X, val_src.y_true),
 		epochs = 5,
 		batch_size = 50)
 

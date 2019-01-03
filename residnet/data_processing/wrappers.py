@@ -379,6 +379,16 @@ class DataPreprocessing:
             - if None, make everything
             - if type(int), make everything up to index `idxs`
             - if it is a list of ints, use these as the indices to draw them out
+        input_keys (list(str), Optional)
+            - List of input keys to put in the input
+            - If nothing is passed in, everything is made
+        output_key (str)
+            - Output truth.
+            - If nothing is passed in, 'temp' is used as the output
+        norm_input (bool)
+            - If True, it normalizes the corners of the input
+            - If False, no normalization of the input is done
+            - Default is True
         '''
         if not self.settings.parsed:
             raise DataProcessingError('make_array: Data is not parsed yet.')

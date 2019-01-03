@@ -14,6 +14,7 @@ import copy
 from residnet.data_processing import wrappers, transforms, metrics
 from residnet.comparison_methods import classification, interpolation
 from residnet import constants, visualization, util
+
 logging.basicConfig(format = constants.LOGGING_FORMAT, level = logging.INFO)
 
 def main():

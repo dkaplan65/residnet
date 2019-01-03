@@ -83,6 +83,8 @@ def Denormalize_arr(arr, norm_data, res, output):
     num_samples = arr.shape[0]
     ret = np.zeros(shape=arr.shape)
     for i in range(num_samples):
+        if i % 50000 == 0:
+            logging.info('{}/{}'.format(i,num_samples))
         ret[i,:] = denormalize(arr[i,:], norm_data[i], res, output)
     return ret
 
@@ -99,6 +101,8 @@ def Normalize_arr(arr, norm_data, res, output):
     num_samples = arr.shape[0]
     ret = np.zeros(shape=arr.shape)
     for i in range(num_samples):
+        if i % 50000 == 0:
+            logging.info('{}/{}'.format(i,num_samples))
         ret[i,:] = normalize(arr[i,:], norm_data[i], res, output)
     return ret
 

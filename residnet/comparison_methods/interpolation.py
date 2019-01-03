@@ -246,6 +246,7 @@ class MLR(MLClass):
         y = np.zeros(
             shape = (X.shape[0], len(self.clfs)))
         for i in range(self.output_len):
+            logging.info('{}/{}'.format(i,self.output_len))
             y[:,i] = self.clfs[i].predict(X)
         return y
 
