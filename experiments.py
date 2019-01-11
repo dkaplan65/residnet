@@ -13,6 +13,7 @@ import keras
 
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 import logging
 import copy
 
@@ -24,8 +25,9 @@ logging.basicConfig(format = constants.LOGGING_FORMAT, level = logging.INFO)
 default_denorm_local = False
 
 def main():
-	experiment2(False)
-	experiment2(True)
+	# experiment0()
+	# experiment2(False)
+	experiment3(False)
 
 def experiment0():
 	'''Experiment 0:
@@ -67,6 +69,7 @@ def experiment0():
 		func = interpolation.nearest_neighbor,
 		cost = metrics.Error,
 		output_size = src.res ** 2)
+	print('RMSE',np.mean(metrics.RMSE(bilinear.y_pred)))
 	nn.save(nn_save_loc)
 
 	logging.info('Start bilinear')
@@ -75,6 +78,7 @@ def experiment0():
 		func = interpolation.bilinear,
 		cost = metrics.Error,
 		output_size = src.res ** 2)
+	print('RMSE',np.mean(metrics.RMSE(bilinear.y_pred)))
 	bilinear.save(bilinear_save_loc)
 
 	logging.info('Start inverse distance weighting')
@@ -83,6 +87,7 @@ def experiment0():
 		func = interpolation.idw,
 		cost = metrics.Error,
 		output_size = src.res ** 2)
+	print('RMSE',np.mean(metrics.RMSE(idw.y_true)))
 	idw.save(idw_save_loc)
 
 	# logging.info('Start bicubic')
@@ -180,7 +185,7 @@ def experiment2(denorm_local = None):
 		train_src.X,
 		train_src.y_true,
 		validation_data = (val_src.X, val_src.y_true),
-		epochs = 2,
+		epochs = 10,
 		batch_size = 50)
 	model.save(nn_model_save_loc)
 
@@ -197,43 +202,30 @@ def experiment2(denorm_local = None):
 
 	test_src.y_true -= y_pred
 	test_src.save(nn_error_save_loc)
-	print(np.mean(metrics.RMSE(test_src.y_true)))
-	map = transforms.mapify(
-		loc_to_idx = test_src.loc_to_idx,
-		arr = test_src.y_true,
-		year = '2008',
-		day = 25,
-		res = test_src.res,
-		classification = False)
-
-	plt.imshow(map)
-	plt.show()
+	print('RMSE',np.mean(metrics.RMSE(test_src.y_true)))
 
 def experiment3(denorm_local = None, threshold = None):
-	'''Trains the classification preprocess nn (NN-RMSE) with threshold `threshold`
+	'''Trains the classification nn (NN-RMSE) with threshold `threshold`
 	'''
 	if denorm_local is None:
 		denorm_local = default_denorm_local
 	if threshold is None:
 		# Defaults to the mean bilinear mean RMSE
-		threshold = 0.12
+		threshold = 0.145
 
-	nn_error_save_loc = 'output/datawrapper/nn_rmse_denormLocal{}_test_error.pkl' \
-		''.format(denorm_local)
-	nn_model_save_loc = 'output/models/nn_rmse.h5'
+	nn_error_save_loc = 'output/datawrapper/nn_rmse_denormLocal{}_test_error.pkl'.format(denorm_local)
+	nn_model_save_loc = 'output/models/nn_rmse_denormLocal{}.h5'.format(denorm_local)
 
 	# Make the training and validation data
 	logging.info('loading training data')
 	training_data = wrappers.DataPreprocessing.load(
-		'output/datapreprocessing/training_data_denorm' \
+		'output/datapreprocessing/clf_training_data_denorm' \
 		'Local{}_res6/'.format(denorm_local))
 	# Split the training_data into both training and validation sets
 	idxs = training_data.split_data_idxs(division_format = 'split',
 		split_dict = {'training': 0.85, 'validation': 0.15}, randomize = True)
 	train_src = training_data.make_array(output_key = 'temp', idxs = idxs['training'])
-	train_src.normalize(output=True)
 	val_src = training_data.make_array(output_key = 'temp', idxs = idxs['validation'])
-	val_src.normalize(output=True)
 
 	logging.info('loading testing data')
 	testing_data = wrappers.DataPreprocessing.load(
@@ -241,7 +233,28 @@ def experiment3(denorm_local = None, threshold = None):
 		'Local{}_res6/'.format(denorm_local))
 	logging.info('make testing data')
 	test_src = testing_data.make_array(output_key = 'temp')
-	test_src.normalize(output = True)
+
+	train_src = transforms.InterpolationErrorClassification(
+	    src = train_src,
+	    func = interpolation.bilinear,
+	    cost = metrics.RMSE,
+	    threshold = threshold,
+	    use_corners = True)
+
+	val_src = transforms.InterpolationErrorClassification(
+	    src = val_src,
+	    func = interpolation.bilinear,
+	    cost = metrics.RMSE,
+	    threshold = threshold,
+	    use_corners = True)
+
+	test_src = transforms.InterpolationErrorClassification(
+	    src = test_src,
+	    func = interpolation.bilinear,
+	    cost = metrics.RMSE,
+	    threshold = threshold,
+	    use_corners = True)
+
 
 	# Make, train, and save the training performance.
 	model = standard_classification_network()
@@ -250,7 +263,7 @@ def experiment3(denorm_local = None, threshold = None):
 		train_src.X,
 		train_src.y_true,
 		validation_data = (val_src.X, val_src.y_true),
-		epochs = 5,
+		epochs = 20,
 		batch_size = 50)
 
 	model.save(nn_model_save_loc)
@@ -269,21 +282,13 @@ def experiment3(denorm_local = None, threshold = None):
 	print('F1: {}'.format(f1))
 
 	# Calculate error
-	error = np.zeros(y_pred.shape[0])
-	for i in range(len(y_pred)):
-		if not np.array_equal(y_pred[i,:], test_src.y_true[i,:]):
-			error[i] = 1
-
-	map = transforms.mapify(
-		loc_to_idx = test_src.loc_to_idx,
-		arr = error,
-		year = '2008',
-		day = 25,
-		res = test_src.res,
-		classification = True)
-
-	plt.imshow(map)
-	plt.show()
+	# error = np.zeros(y_pred.shape[0])
+	# for i in range(len(y_pred)):
+	# 	if not np.array_equal(y_pred[i,:], test_src.y_true[i,:]):
+	# 		error[i] = 1
+	#
+	# plt.imshow(map)
+	# plt.show()
 
 def experiment4(denorm_local = None, threshold = None):
 	'''Classification with Logistic regression
@@ -365,8 +370,6 @@ def experiment6(denorm_local = None, threshold = None):
 
 	d = load_datawrappers(denorm_local = denorm_local, threshold = threshold,
 		load_reg_train = False, load_clf_train = True)
-
-
 
 ####################
 # Auxiliary methods
@@ -486,7 +489,7 @@ def standard_regression_network():
 	model.add(Dense(units=100, activation='relu',input_dim=20))
 	model.add(Dense(units=100, activation='relu'))
 	model.add(Dropout(0.3))
-	model.add(Dense(units=36,activation='relu'))
+	model.add(Dense(units=36,activation='tanh'))
 	model.compile(
 		loss = 'mse',
 		optimizer = 'adam',

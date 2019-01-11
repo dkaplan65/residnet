@@ -171,7 +171,7 @@ def InterpolationErrorClassification(
     ---------
     args
     ---------
-    src (dataProcessing.wrappers.InputDataWrapper or np.ndarray)
+    src (dataProcessing.wrappers.DataWrapper or np.ndarray)
         - Contains the information necessary
         - If src is a np.ndarray, `res` must also be provided
 
@@ -199,8 +199,8 @@ def InterpolationErrorClassification(
                 src=src,
                 func=comparison_methods.interpolation.bilinear,
                 cost=metrics.MSE,
-                threshold=0.12,
-                output_size = 2)
+                threshold=0.12
+                use-corners=True)
     '''
     return _InterpolationError(src = src,
                                func = func,

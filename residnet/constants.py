@@ -5,7 +5,6 @@ Advisor: Stephen Penny
 Default and reference values
 '''
 from numpy import array
-import matplotlib
 from pickle import HIGHEST_PROTOCOL
 
 
@@ -78,7 +77,6 @@ DEFAULT_CLF_CLASS_WEIGHT = 'balanced'
 DEFAULT_VIS_PLOT_REL_PRIM_COLOR = 'black'
 DEFAULT_VIS_PLOT_LINEWIDTH = 1
 DEFAULT_VIS_PRIMARY_LABEL = 'Bilinear'
-DEFAULT_VIS_CMAP = matplotlib.cm.get_cmap()
 
 # Default values for data_processing.transforms
 DEFAULT_TRANS_SIZE_INTERP = 1

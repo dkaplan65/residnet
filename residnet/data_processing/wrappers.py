@@ -248,6 +248,11 @@ class DataPreprocessing:
                                     # logging.debug('corner_vals:\n{}\n'.format(corners))
                                     # logging.debug('norm_data:\n{}\n'.format(self.norm_data[key][z,:]))
                                 z += 1
+                            # else:
+                            #     print('\n\ny: {}, x: {}'.format(x,y))
+                            #     print('not accepted')
+                            #     print('print(arr:\n{}'.format(raw_data[year]['temp'][t,
+                            #         y : y + res_in,x : x + res_in].reshape(6,6)))
         except MaxDays:
             logging.debug('Total number of days read: num_days: {}, year {}, day: {}'.format(num_days,year,t))
         # Trim excess from arrays

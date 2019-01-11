@@ -80,7 +80,7 @@ def plot_errors_relative(ax, arr_primary, lst_arrs, lst_labels,
 
 	return set_ax_labels(ax)
 
-def map(ax, arr, cmap = None, **kwargs):
+def map(ax, arr, cmap = None, vmin = None, vmax = None, **kwargs):
 	'''Plots a map for the given array.
 	Assumes that the given array is already in the right orientation.
 	-----------
@@ -91,12 +91,7 @@ def map(ax, arr, cmap = None, **kwargs):
 	cmap (matplotlib.cm)
 		- colormap
 	'''
-
-	# Set the NaNs to grey
-	if cmap == None:
-		cmap = copy.deepcopy(DEFAULT_VIS_CMAP)
-	cmap.set_bad(color = 'grey')
-	ax.imshow(arr)
+	im = ax.imshow(arr, cmap = cmap, vmin=vmin, vmax=vmax)
 
 	# Remove ticks
 	ax.tick_params(
@@ -110,7 +105,8 @@ def map(ax, arr, cmap = None, **kwargs):
 		labeltop = False,
 		labelleft = False,
 		labelright = False)
-	return set_ax_labels(ax,**kwargs)
+	set_ax_labels(ax,**kwargs)
+	return im
 
 def map_over_time(src, cmap, **kwargs):
 	'''Maps the DataWrapper contents for each day in the year
