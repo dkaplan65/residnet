@@ -11,6 +11,12 @@ Classification preprocess neural network interpolation
 `ul` refers to the upper left corner of the subgrid
 `ur` refers to the upper right corner of the subgrid
 
+
+TODO
+    - Fix checking if a parameter for functions for NN-Prep is a function
+      or an object
+    - Make ClfInterpWrapper.predict faster
+
 '''
 import numpy as np
 import math
@@ -330,7 +336,7 @@ class ClfInterpWrapper(MLClass):
         self.clf = clf
         self.regs = {}
         self.res = res
-        self.clf_trained = False
+        # self.clf_trained = False
         self.regs_trained = False
         self.out_len = None
 
@@ -339,12 +345,14 @@ class ClfInterpWrapper(MLClass):
             # If it is a function, then the inspect class will return
             # false, so we will have to wrap it
 
-            if inspect.isclass(val):
-                logging.info('{} is a ml-interpolation method'.format(key))
-                self.regs[key] = val
-            else:
-                logging.info('{} is a non-ml interpolation method'.format(key))
-                self.regs[key] = _NonMLInterpolationWrapper(func=val, res = res)
+            # if inspect.isclass(val):
+            #     logging.info('{} is a ml-interpolation method'.format(key))
+            #     self.regs[key] = val
+            # else:
+            #     logging.info('{} is a non-ml interpolation method'.format(key))
+            #     self.regs[key] = ClfInterpWrapper._NonMLInterpolationWrapper(func=val, res = res)
+            self.regs[key] = val
+
 
     def fit_clf(self, X, y):
         '''Trains the classifier
@@ -356,7 +364,7 @@ class ClfInterpWrapper(MLClass):
         '''
         self.clf.fit(X = X, y = y)
 
-    def fit_interp(self, X, y):
+    def fit_interp(self, X, y, epochs = None, batch_size = None):
         '''Trains the regressors.
 
         The first thing we need to do is divide up the appropriate data for
@@ -366,16 +374,24 @@ class ClfInterpWrapper(MLClass):
             - Covariates.
         y (np.ndarray)
         '''
-
-        if not self.clf.trained:
-            raise InterpError('Classifier must be trained before regression can be trained')
+        # if not self.clf.trained:
+        #     raise InterpError('Classifier must be trained before regression can be trained')
+        if epochs is None:
+            epochs = 10
+        if batch_size is None:
+            batch_size = 50
 
         self.out_len = y.shape[1]
-        ret = self.clf.predict(X)
+        pred = self.clf.predict(X)
+        ret = np.argmax(pred, axis = 1)
         # get the indices for each regression
         for key,val in self.regs.items():
-            ind = get_idxs_of_val(arr = ret, val = val)
-            self.regs[key].fit(X = X[ind], y = y[ind])
+            ind = get_idxs_of_val(arr = ret, val = key)
+            self.regs[key].fit(
+                X[ind],
+                y[ind],
+                epochs = epochs,
+        		batch_size = batch_size)
         self.regs_trained = True
 
     def predict(self, X):
@@ -389,9 +405,14 @@ class ClfInterpWrapper(MLClass):
         if len(X.shape) == 1:
             X = X[np.newaxis, ...]
         out = np.zeros(shape=(X.shape[0], self.out_len))
-        for i in range(X.shape[0]):
-            out[i,:] = self.regs[self.clf.predict(X[i,:])].predict(X[i,:])
 
+
+        for i in range(X.shape[0]):
+            if i % 50000 == 0:
+                logging.info('{}/{}'.format(i, X.shape[0]))
+            clf_pred = self.clf.predict(X[i:i+1,:])
+            clf_pred = np.argmax(clf_pred)
+            out[i,:] = self.regs[clf_pred].predict(X[i:i+1,:])
         return out
 
 class InterpError(Exception):

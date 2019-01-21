@@ -16,18 +16,28 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import logging
 import copy
+import collections
 
 from residnet.data_processing import wrappers, transforms, metrics
 from residnet.comparison_methods import classification, interpolation
 from residnet import util, constants, visualization
 
-logging.basicConfig(format = constants.LOGGING_FORMAT, level = logging.INFO)
+logging.basicConfig(format = constants.LOGGING_FORMAT, level = logging.CRITICAL)
 default_denorm_local = False
 
 def main():
-	# experiment0()
-	# experiment2(False)
-	experiment3(False)
+
+	lst = [True,False]
+	experiment0()
+
+	for ele in lst:
+		print('denorm_local?',ele)
+		print('experiment output1:',experiment1(ele))
+		print('experiment output2:',experiment2(ele))
+		print('experiment output3:',experiment3(ele))
+		print('experiment output4:',experiment4(ele))
+		print('experiment output5:',experiment6(ele))
+
 
 def experiment0():
 	'''Experiment 0:
@@ -147,6 +157,7 @@ def experiment1(denorm_local = None):
 	test_src.denormalize(output = True)
 	test_src.y_true -= y_pred
 	test_src.save(mlr_error_save_loc)
+	return np.mean(metrics.RMSE(test_src.y_true))
 
 def experiment2(denorm_local = None):
 	'''Trains NN_LoRes on the training data and then runs it on the testing data
@@ -190,19 +201,19 @@ def experiment2(denorm_local = None):
 	model.save(nn_model_save_loc)
 
 	y_pred = model.predict(test_src.X)
-	print('norm y_pred[0,:]',y_pred[0,:])
+	# print('norm y_pred[0,:]',y_pred[0,:])
 	# Denormalized prediction
 	y_pred = transforms.Denormalize_arr(
 		arr = y_pred, norm_data = test_src.norm_data, res = test_src.res,
 		output = True)
-	print('denorm y_pred[0,:]',y_pred[0,:])
+	# print('denorm y_pred[0,:]',y_pred[0,:])
 
 	test_src.denormalize(output = True)
-	print('denorm test_src.y_true[0,:]',test_src.y_true[0,:])
+	# print('denorm test_src.y_true[0,:]',test_src.y_true[0,:])
 
 	test_src.y_true -= y_pred
 	test_src.save(nn_error_save_loc)
-	print('RMSE',np.mean(metrics.RMSE(test_src.y_true)))
+	return np.mean(metrics.RMSE(test_src.y_true))
 
 def experiment3(denorm_local = None, threshold = None):
 	'''Trains the classification nn (NN-RMSE) with threshold `threshold`
@@ -211,7 +222,7 @@ def experiment3(denorm_local = None, threshold = None):
 		denorm_local = default_denorm_local
 	if threshold is None:
 		# Defaults to the mean bilinear mean RMSE
-		threshold = 0.145
+		threshold = 0.13
 
 	nn_error_save_loc = 'output/datawrapper/nn_rmse_denormLocal{}_test_error.pkl'.format(denorm_local)
 	nn_model_save_loc = 'output/models/nn_rmse_denormLocal{}.h5'.format(denorm_local)
@@ -263,32 +274,29 @@ def experiment3(denorm_local = None, threshold = None):
 		train_src.X,
 		train_src.y_true,
 		validation_data = (val_src.X, val_src.y_true),
-		epochs = 20,
+		epochs = 10,
 		batch_size = 50)
 
 	model.save(nn_model_save_loc)
 
 	y_pred = model.predict(test_src.X)
 
-	print('y_pred type', type(y_pred))
-	print('y_pred.shape:',y_pred.shape)
+	# print('y_pred type', type(y_pred))
+	# print('y_pred.shape:',y_pred.shape)
 
 	prec = metrics.precision(y_true = test_src.y_true, y_pred = y_pred)
 	acc = metrics.accuracy(y_true = test_src.y_true, y_pred = y_pred)
 	f1 = metrics.F1(y_true = test_src.y_true, y_pred = y_pred)
 
-	print('precision: {}'.format(prec))
-	print('accuracy: {}'.format(acc))
-	print('F1: {}'.format(f1))
+	# print('precision: {}'.format(prec))
+	# print('accuracy: {}'.format(acc))
+	# print('F1: {}'.format(f1))
 
-	# Calculate error
-	# error = np.zeros(y_pred.shape[0])
-	# for i in range(len(y_pred)):
-	# 	if not np.array_equal(y_pred[i,:], test_src.y_true[i,:]):
-	# 		error[i] = 1
-	#
-	# plt.imshow(map)
-	# plt.show()
+	a = collections.Counter(transforms.collapse_one_hot(y_pred))
+	print('n0:', a[0])
+	print('n1:', a[1])
+
+	return acc
 
 def experiment4(denorm_local = None, threshold = None):
 	'''Classification with Logistic regression
@@ -308,6 +316,7 @@ def experiment4(denorm_local = None, threshold = None):
 	test_src = d['test_src']
 
 	test_src.y_true = np.argmax(test_src.y_true, axis = 1)
+	train_src.y_true = np.argmax(train_src.y_true, axis = 1)
 
 	model = classification.LogisticRegression(penalty = 'l2')
 	model.fit(X = train_src.X, y = train_src.y_true)
@@ -317,44 +326,42 @@ def experiment4(denorm_local = None, threshold = None):
 	acc = metrics.accuracy(y_true = test_src.y_true, y_pred = y_pred)
 	f1 = metrics.F1(y_true = test_src.y_true, y_pred = y_pred)
 
-	print('precision: {}'.format(prec))
-	print('accuracy: {}'.format(acc))
-	print('F1: {}'.format(f1))
+	return acc
 
-def experiment5(denorm_local = None, threshold = None):
-	'''Trains the classification preprocess nn (NN-ENSM) with threshold `threshold`
-	'''
-	if denorm_local is None:
-		denorm_local = default_denorm_local
-	if threshold is None:
-		# Defaults to the mean bilinear mean RMSE
-		threshold = 0.103
-
-	# nn_error_save_loc = 'output/datawrapper/nn_rmse_test_error.pkl'
-	# nn_model_save_loc = 'output/models/nn_rmse.h5'
-
-	d = load_datawrappers(denorm_local = denorm_local, threshold = threshold,
-		load_reg_train = False, load_clf_train = True)
-	train_src = d['clf_train_src']
-	test_src = d['test_src']
-
-	# Make, train, and save the training performance.
-	model = standard_classification_network()
-
-	nn = classification.NNEnsemble(model = model, size = 9)
-	nn.fit(X = train_src.X, y = train_src.y_true, epochs = 5)
-	y_pred = nn.predict(test_src.X)
-
-	print('y_pred.shape:',y_pred.shape)
-	print('y_true.shape:',test_src.y_true.shape)
-
-	prec = metrics.precision(y_true = test_src.y_true, y_pred = y_pred)
-	acc = metrics.accuracy(y_true = test_src.y_true, y_pred = y_pred)
-	f1 = metrics.F1(y_true = test_src.y_true, y_pred = y_pred)
-
-	print('precision: {}'.format(prec))
-	print('accuracy: {}'.format(acc))
-	print('F1: {}'.format(f1))
+# def experiment5(denorm_local = None, threshold = None):
+# 	'''Trains the classification preprocess nn (NN-ENSM) with threshold `threshold`
+# 	'''
+# 	if denorm_local is None:
+# 		denorm_local = default_denorm_local
+# 	if threshold is None:
+# 		# Defaults to the mean bilinear mean RMSE
+# 		threshold = 0.103
+#
+# 	# nn_error_save_loc = 'output/datawrapper/nn_rmse_test_error.pkl'
+# 	# nn_model_save_loc = 'output/models/nn_rmse.h5'
+#
+# 	d = load_datawrappers(denorm_local = denorm_local, threshold = threshold,
+# 		load_reg_train = False, load_clf_train = True)
+# 	train_src = d['clf_train_src']
+# 	test_src = d['test_src']
+#
+# 	# Make, train, and save the training performance.
+# 	model = standard_classification_network()
+#
+# 	nn = classification.NNEnsemble(model = model, size = 9)
+# 	nn.fit(X = train_src.X, y = train_src.y_true, epochs = 5)
+# 	y_pred = nn.predict(test_src.X)
+#
+# 	print('y_pred.shape:',y_pred.shape)
+# 	print('y_true.shape:',test_src.y_true.shape)
+#
+# 	prec = metrics.precision(y_true = test_src.y_true, y_pred = y_pred)
+# 	acc = metrics.accuracy(y_true = test_src.y_true, y_pred = y_pred)
+# 	f1 = metrics.F1(y_true = test_src.y_true, y_pred = y_pred)
+#
+# 	print('precision: {}'.format(prec))
+# 	print('accuracy: {}'.format(acc))
+# 	print('F1: {}'.format(f1))
 
 def experiment6(denorm_local = None, threshold = None):
 	'''Train and test NN-Prep
@@ -363,13 +370,57 @@ def experiment6(denorm_local = None, threshold = None):
 		denorm_local = default_denorm_local
 	if threshold is None:
 		# Defaults to the mean bilinear mean RMSE
-		threshold = 0.103
+		threshold = 0.13
 
-	# nn_error_save_loc = 'output/datawrapper/nn_rmse_test_error.pkl'
-	# nn_model_save_loc = 'output/models/nn_rmse.h5'
+	nn_error_save_loc = 'output/datawrapper/nn_prep_' \
+		'denormLocal{}_test_error.pkl'.format(denorm_local)
 
-	d = load_datawrappers(denorm_local = denorm_local, threshold = threshold,
-		load_reg_train = False, load_clf_train = True)
+
+	# Load interpolation training and testing data
+	logging.info('loading training data')
+	training_data = wrappers.DataPreprocessing.load(
+		'output/datapreprocessing/training_data_denorm' \
+		'Local{}_res6/'.format(denorm_local))
+	train_src = training_data.make_array(output_key = 'temp')
+	train_src.normalize(output=True)
+
+	logging.info('loading testing data')
+	testing_data = wrappers.DataPreprocessing.load(
+		'output/datapreprocessing/testing_data_denorm' \
+		'Local{}_res6/'.format(denorm_local))
+	logging.info('make testing data')
+	test_src = testing_data.make_array(output_key = 'temp')
+	test_src.normalize(output = True)
+
+	# Load classification network and make NN-Prep
+	nn_clf_model_save_loc = 'output/models/nn_rmse_denormLocal{}.h5'.format(denorm_local)
+	a = interpolation.ClfInterpWrapper(
+		clf = keras.models.load_model(nn_clf_model_save_loc),
+		regs = {1: standard_regression_network(),
+			0: standard_regression_network()},
+		res = 6)
+
+	# Train
+	a.fit_interp(X=train_src.X, y=train_src.y_true)
+	y_pred = a.predict(test_src.X)
+
+	# Denormalize
+	# print('norm y_pred[0,:]',y_pred[0,:])
+	y_pred = transforms.Denormalize_arr(
+		arr = y_pred, norm_data = test_src.norm_data, res = test_src.res,
+		output = True)
+	# print('denorm y_pred[0,:]',y_pred[0,:])
+	test_src.denormalize(output = True)
+
+	test_src.y_true -= y_pred
+	test_src.save(nn_error_save_loc)
+	rmse = np.mean(metrics.RMSE(test_src.y_true))
+	return rmse
+
+
+
+
+
 
 ####################
 # Auxiliary methods

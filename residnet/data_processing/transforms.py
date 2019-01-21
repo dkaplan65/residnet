@@ -457,6 +457,8 @@ def collapse_one_hot(arr):
     1: greater than
     0: less than
     '''
+    if arr.ndim == 1:
+        return arr
     ret = np.zeros(arr.shape[0])
     for i in range(arr.shape[0]):
         ret[i] = np.argmax(arr[i,:])
