@@ -57,13 +57,11 @@ class SKLearnBase(MLClass):
             - Labels
             - Do not have to pass in y for KMeans
         '''
-        if y is None or X is None:
-            raise CLFError('No X or y')
-
-        if len(y.shape) >= 2:
-            self.n_clusters = y.shape[1]
-        else:
-            self.n_clusters = len(np.unique(y))
+        if y is not None:
+            if len(y.shape) >= 2:
+                self.n_clusters = y.shape[1]
+            else:
+                self.n_clusters = len(np.unique(y))
         if y is None:
             # For KMeans
             self.clf.fit(X)
@@ -74,8 +72,6 @@ class SKLearnBase(MLClass):
     def predict(self,X):
         if not self.trained:
             raise CLFError('Must first train the model before you predict')
-        if type(src) is DataWrapper:
-            X = X.X
         # If `src` is not a DataWrapper, then it is an array and we can pass it right in
         return self.clf.predict(X)
 
@@ -101,9 +97,9 @@ class KMeansWrapper(SKLearnBase):
         n_init (int)
             - Number of times to run KMeans with different centroid seeds
         '''
-        if kwargs['n_clusters'] == None:
+        if 'n_clusters' not in kwargs:
             kwargs['n_clusters'] = DEFAULT_CLF_N_CLUSTERS
-        if kwargs['n_init'] == None:
+        if 'n_init' not in kwargs:
             kwargs['n_init'] = DEFAULT_CLF_N_INIT
         SKLearnBase.__init__(
             self,
@@ -125,11 +121,11 @@ class LogisticRegressionWrapper(SKLearnBase):
 
         Class weight is always DEFAULT_CLF_CLASS_WEIGHT
         '''
-        if kwargs['penalty'] == None:
+        if 'penalty' not in kwargs:
             kwargs['penalty'] = DEFAULT_CLF_PENALTY
-        if kwargs['solver'] == None:
+        if 'solver' not in kwargs:
             kwargs['solver'] = DEFAULT_CLF_SOLVER
-        if kwargs['C'] == None:
+        if 'C' not in kwargs:
             kwargs['C'] = DEFAULT_CLF_C
         kwargs['class_weight'] = DEFAULT_CLF_CLASS_WEIGHT
         SKLearnBase.__init__(

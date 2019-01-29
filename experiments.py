@@ -22,31 +22,101 @@ from residnet.data_processing import wrappers, transforms, metrics
 from residnet.comparison_methods import classification, interpolation
 from residnet import util, constants, visualization
 
-logging.basicConfig(format = constants.LOGGING_FORMAT, level = logging.CRITICAL)
+logging.basicConfig(format = constants.LOGGING_FORMAT, level = logging.INFO)
 default_denorm_local = False
 
 def main():
+	table1a()
+	table1b()
 
+def table1a():
+	f = open('table1a_results.txt', 'w')
 	lst = [True,False]
-	print('experiment 0')
-	experiment0()
-	
-	for ele in lst:
-		print('\n\ndenorm_local?',ele)
-		print('experiment 1')
-		print('MLR:',experiment1(ele))
-		print('experiment 2')
-		print('NN_LoRes:',experiment2(ele))
-		print('experiment 3')
-		print('NN_RMSE:',experiment3(ele))
-		print('experiment 4')
-		print('NN_LR:',experiment4(ele))
-		print('experiment 5')
-		print('NN-prep:',experiment5(ele))
-		print('experiment 6')
-		print('NN-KMeans:',experiment6(ele))
+	f.write('experiment 0\n')
+	f = experiment0(f)
 
-def experiment0():
+	for ele in lst:
+		f.write('\n\ndenorm_local?: {}\n'.format(ele))
+
+		f.write('\nexperiment 1: MLR:')
+		f = performance(f, experiment1(ele)))
+
+		f.write('\nexperiment 2: NN_LoRes:')
+		f = performance(f, experiment2(ele)))
+
+		f.write('\nexperiment 3: NN_RMSE:')
+		f = experiment3(f,ele))
+
+		f.write('\nexperiment 4: NN_l1LR:')
+		f = experiment4(f,ele,penalty='l1'))
+
+		f.write('\nexperiment 4.5: NN_l2LR:')
+		f = experiment4(f,ele,penalty='l2'))
+
+		f.write('\nexperiment 5: NN-prep:')
+		f = performance(f, experiment5(ele)))
+
+		f.write('\nexperiment 6: NN-KMeans:')
+		f = performance(f, experiment6(ele)))
+
+	f.close()
+
+def table1b():
+	f = open('table1b_results.txt', 'w')
+	lst = [True,False]
+
+	for ele in lst:
+		f.write('\n\ndenorm_local?: {}\n'.format(ele))
+
+		#load only the high error idxs of the test set
+		nn_rmse_load_path = 'output/models/nn_rmse_denormLocal{}.h5'.format(ele)
+		model = keras.load_model(nn_rmse_load_path)
+		testing_data = wrappers.DataPreprocessing.load(
+			'output/datapreprocessing/testing_data_denorm' \
+			'Local{}_res6/'.format(ele))
+		test_src = testing_data.make_array(output_key = 'temp')
+		pred = model.predict(test_src.X)
+		pred = transforms.collapse_one_hot(pred)
+		test_idxs = np.where(pred==1)
+
+		f.write('\nexperiment 0')
+		f = experiment0(f,test_idxs=test_idxs)
+
+		f.write('\nexperiment 1: MLR:')
+		f = performance(f, experiment1(ele,test_idxs=test_idxs)))
+
+		f.write('\nexperiment 2: NN_LoRes:')
+		f = performance(f, experiment2(ele,test_idxs=test_idxs)))
+
+		f.write('\nexperiment 3: NN_RMSE:')
+		f = experiment3(f,ele,test_idxs=test_idxs))
+
+		f.write('\nexperiment 4: NN_l1LR:')
+		f = experiment4(f,ele,penalty='l1',test_idxs=test_idxs))
+
+		f.write('\nexperiment 4: NN_l2LR:')
+		f = experiment4(f,ele,penalty='l2',test_idxs=test_idxs))
+
+		f.write('\nexperiment 5: NN-prep:')
+		f = performance(f, experiment5(ele,test_idxs=test_idxs)))
+
+		f.write('\nexperiment 6: NN-KMeans:')
+		f = performance(f, experiment6(ele,test_idxs=test_idxs)))
+
+	f.close()
+
+
+def performance(f,dw):
+	'''Writes the mean RMSE, std RMSE, and bias of the datawrapper
+	'''
+	rmse = metrics.RMSE(dw.y_true)
+	f.write('\n\tmean RMSE: {}'.format(np.mean(rmse)))
+	f.write('\n\std RMSE: {}'.format(np.std(rmse)))
+	f.write('\n\tbias: {}'.format(metrics.bias(dw.y_true)))
+
+	return dw
+
+def experiment0(f,test_idxs=None):
 	'''Experiment 0:
 
 	These are the non machine-learning comparison methods that we are going to compare the
@@ -72,8 +142,8 @@ def experiment0():
 	data = wrappers.DataPreprocessing.load('output/datapreprocessing/testing_data_'
 		'denormLocalFalse_res6/')
 	logging.info('Make array')
-	src = data.make_array(input_keys = ['temp'], output_key = 'temp',
-		norm_input = False)
+	src = data.make_array(input_keys = ['temp'], output_key = 'temp', norm_input = False,
+		idxs=test_idxs)
 
 	nn_save_loc = 'output/datawrapper/nearest_neighbor_test_error.pkl'
 	bilinear_save_loc = 'output/datawrapper/bilinear_test_error.pkl'
@@ -86,7 +156,8 @@ def experiment0():
 		func = interpolation.nearest_neighbor,
 		cost = metrics.Error,
 		output_size = src.res ** 2)
-	print('nearest neighbor RMSE',np.mean(metrics.RMSE(nn.y_true)))
+	f.write('\nnn performance')
+	f = performance(f,nn)
 	nn.save(nn_save_loc)
 
 	logging.info('Start bilinear')
@@ -95,7 +166,8 @@ def experiment0():
 		func = interpolation.bilinear,
 		cost = metrics.Error,
 		output_size = src.res ** 2)
-	print('bilinear RMSE',np.mean(metrics.RMSE(bilinear.y_true)))
+	f.write('\nbilinear performance')
+	f = performance(f,nn)
 	bilinear.save(bilinear_save_loc)
 
 	logging.info('Start inverse distance weighting')
@@ -104,7 +176,8 @@ def experiment0():
 		func = interpolation.idw,
 		cost = metrics.Error,
 		output_size = src.res ** 2)
-	print('idw RMSE',np.mean(metrics.RMSE(idw.y_true)))
+	f.write('\nidw performance')
+	f = performance(f,nn)
 	idw.save(idw_save_loc)
 
 	# logging.info('Start bicubic')
@@ -114,8 +187,9 @@ def experiment0():
 	# 	cost = metrics.Error,
 	# 	output_size = src.res ** 2)
 	# bicubic.save(bicubic_save_loc)
+	return f
 
-def experiment1(denorm_local = None):
+def experiment1(denorm_local = None,test_idxs=None):
 	'''Experiment 1:
 	Trains MLR on the training data and then runs it on the testing data.
 	Later functions will do the statistical analysis.
@@ -144,7 +218,7 @@ def experiment1(denorm_local = None):
 		'output/datapreprocessing/testing_data_denorm' \
 		'Local{}_res6/'.format(denorm_local))
 	logging.info('make testing data')
-	test_src = testing_data.make_array(output_key = 'temp')
+	test_src = testing_data.make_array(output_key = 'temp',idxs=test_idxs)
 	test_src.normalize()
 
 	# Train the model and then predict the testing data
@@ -164,9 +238,9 @@ def experiment1(denorm_local = None):
 	test_src.denormalize(output = True)
 	test_src.y_true -= y_pred
 	test_src.save(mlr_error_save_loc)
-	return np.mean(metrics.RMSE(test_src.y_true))
+	return test_src
 
-def experiment2(denorm_local = None):
+def experiment2(denorm_local = None,test_idxs=None):
 	'''Trains NN_LoRes on the training data and then runs it on the testing data
 	'''
 	if denorm_local is None:
@@ -194,7 +268,7 @@ def experiment2(denorm_local = None):
 		'output/datapreprocessing/testing_data_denorm' \
 		'Local{}_res6/'.format(denorm_local))
 	logging.info('make testing data')
-	test_src = testing_data.make_array(output_key = 'temp')
+	test_src = testing_data.make_array(output_key = 'temp',idxs=test_idxs)
 	test_src.normalize(output = True)
 
 	# Make, train, and save the training performance.
@@ -220,9 +294,9 @@ def experiment2(denorm_local = None):
 
 	test_src.y_true -= y_pred
 	test_src.save(nn_error_save_loc)
-	return np.mean(metrics.RMSE(test_src.y_true))
+	return test_src
 
-def experiment3(denorm_local = None, threshold = None):
+def experiment3(f,denorm_local = None, threshold = None,test_idxs=None):
 	'''Trains the classification nn (NN-RMSE) with threshold `threshold`
 	'''
 	if denorm_local is None:
@@ -250,7 +324,7 @@ def experiment3(denorm_local = None, threshold = None):
 		'output/datapreprocessing/testing_data_denorm' \
 		'Local{}_res6/'.format(denorm_local))
 	logging.info('make testing data')
-	test_src = testing_data.make_array(output_key = 'temp')
+	test_src = testing_data.make_array(output_key = 'temp',idxs=test_idxs)
 
 	train_src = transforms.InterpolationErrorClassification(
 	    src = train_src,
@@ -288,24 +362,20 @@ def experiment3(denorm_local = None, threshold = None):
 
 	y_pred = model.predict(test_src.X)
 
-	# print('y_pred type', type(y_pred))
-	# print('y_pred.shape:',y_pred.shape)
-
 	prec = metrics.precision(y_true = test_src.y_true, y_pred = y_pred)
 	acc = metrics.accuracy(y_true = test_src.y_true, y_pred = y_pred)
 	f1 = metrics.F1(y_true = test_src.y_true, y_pred = y_pred)
 
-	# print('precision: {}'.format(prec))
-	# print('accuracy: {}'.format(acc))
-	# print('F1: {}'.format(f1))
+	f.write('\n\tprecision: {}'.format(prec))
+	f.write('\n\taccuracy: {}'.format(acc))
+	f.write('\n\tF1: {}'.format(f1))
 
 	a = collections.Counter(transforms.collapse_one_hot(y_pred))
-	print('n0:', a[0])
-	print('n1:', a[1])
+	f.write('\n\tn0:', a[0])
+	f.write('\n\tn1:', a[1])
+	return f
 
-	return acc
-
-def experiment4(denorm_local = None, threshold = None):
+def experiment4(f,denorm_local = None, threshold = None,penalty='l1',test_idxs=None):
 	'''Classification with Logistic regression
 	'''
 	if denorm_local is None:
@@ -314,18 +384,38 @@ def experiment4(denorm_local = None, threshold = None):
 		# Defaults to the mean bilinear mean RMSE
 		threshold = 0.12
 
-	nn_error_save_loc = 'output/datawrapper/nn_rmse_test_error.pkl'
-	nn_model_save_loc = 'output/models/nn_rmse.h5'
+	# Make the training and validation data
+	logging.info('loading training data')
+	training_data = wrappers.DataPreprocessing.load(
+		'output/datapreprocessing/clf_training_data_denorm' \
+		'Local{}_res6/'.format(denorm_local))
+	train_src = training_data.make_array(output_key = 'temp')
 
-	d = load_datawrappers(denorm_local = denorm_local, threshold = threshold,
-		load_reg_train = False, load_clf_train = True)
-	train_src = d['clf_train_src']
-	test_src = d['test_src']
+	logging.info('loading testing data')
+	testing_data = wrappers.DataPreprocessing.load(
+		'output/datapreprocessing/testing_data_denorm' \
+		'Local{}_res6/'.format(denorm_local))
+	logging.info('make testing data')
+	test_src = testing_data.make_array(output_key = 'temp',idxs=test_idxs)
+
+	train_src = transforms.InterpolationErrorClassification(
+	    src = train_src,
+	    func = interpolation.bilinear,
+	    cost = metrics.RMSE,
+	    threshold = threshold,
+	    use_corners = True)
+
+	test_src = transforms.InterpolationErrorClassification(
+	    src = test_src,
+	    func = interpolation.bilinear,
+	    cost = metrics.RMSE,
+	    threshold = threshold,
+	    use_corners = True)
 
 	test_src.y_true = np.argmax(test_src.y_true, axis = 1)
 	train_src.y_true = np.argmax(train_src.y_true, axis = 1)
 
-	model = classification.LogisticRegression(penalty = 'l2')
+	model = classification.LogisticRegression(penalty = penalty)
 	model.fit(X = train_src.X, y = train_src.y_true)
 	y_pred = model.predict(X = test_src.X)
 
@@ -333,9 +423,17 @@ def experiment4(denorm_local = None, threshold = None):
 	acc = metrics.accuracy(y_true = test_src.y_true, y_pred = y_pred)
 	f1 = metrics.F1(y_true = test_src.y_true, y_pred = y_pred)
 
-	return acc
+	f.write('\n\tprecision: {}'.format(prec))
+	f.write('\n\taccuracy: {}'.format(acc))
+	f.write('\n\tF1: {}'.format(f1))
 
-def experiment5(denorm_local = None, threshold = None):
+	a = collections.Counter(transforms.collapse_one_hot(y_pred))
+	f.write('\n\tn0:', a[0])
+	f.write('\n\tn1:', a[1])
+
+	return f
+
+def experiment5(denorm_local = None, threshold = None,test_idxs=None):
 	'''Train and test NN-Prep
 	'''
 	if denorm_local is None:
@@ -361,7 +459,7 @@ def experiment5(denorm_local = None, threshold = None):
 		'output/datapreprocessing/testing_data_denorm' \
 		'Local{}_res6/'.format(denorm_local))
 	logging.info('make testing data')
-	test_src = testing_data.make_array(output_key = 'temp')
+	test_src = testing_data.make_array(output_key = 'temp',idxs=test_idxs)
 	test_src.normalize(output = True)
 
 	# Load classification network and make NN-Prep
@@ -386,10 +484,9 @@ def experiment5(denorm_local = None, threshold = None):
 
 	test_src.y_true -= y_pred
 	test_src.save(nn_error_save_loc)
-	rmse = np.mean(metrics.RMSE(test_src.y_true))
-	return rmse
+	return test_src
 
-def experiment6(denorm_local = None, n_clusters = None):
+def experiment6(denorm_local = None, n_clusters = None,test_idxs=None):
 	'''Train and test NN-KMeans
 	'''
 	if denorm_local is None:
@@ -413,7 +510,7 @@ def experiment6(denorm_local = None, n_clusters = None):
 		'output/datapreprocessing/testing_data_denorm' \
 		'Local{}_res6/'.format(denorm_local))
 	logging.info('make testing data')
-	test_src = testing_data.make_array(output_key = 'temp')
+	test_src = testing_data.make_array(output_key = 'temp',idxs=test_idxs)
 	test_src.normalize(output = True)
 
 	clf_training_data = wrappers.DataPreprocessing.load(
@@ -422,7 +519,7 @@ def experiment6(denorm_local = None, n_clusters = None):
 	clf_train_src = clf_training_data.make_array(output_key = 'temp')
 
 	kmeans = classification.KMeansWrapper(n_clusters=n_clusters)
-	kmeans.fit(X=clf_train_src)
+	kmeans.fit(X=clf_train_src.X)
 
 	# Load classification network and make NN-Prep
 	a = interpolation.ClfInterpWrapper(
@@ -445,13 +542,7 @@ def experiment6(denorm_local = None, n_clusters = None):
 
 	test_src.y_true -= y_pred
 	test_src.save(nn_error_save_loc)
-	rmse = np.mean(metrics.RMSE(test_src.y_true))
-	return rmse
-
-
-
-
-
+	return test_src
 
 ####################
 # Auxiliary methods
@@ -515,44 +606,6 @@ class generate_preprocess_data:
 		prep_data.parse_data()
 		prep_data.save()
 		return prep_data
-
-def table1a_analysis(
-	src_bilinear,
-	src_nearest_neighbor,
-	src_bicubic,
-	src_idw,
-	src_global_mlr,
-	src_local_mlr,
-	src_global_nn_lores,
-	src_local_nn_lores,
-	src_global_nn_prep,
-	src_local_nn_prep,
-	src_global_kmeans,
-	src_local_kmeans):
-	'''Computes statistics for table 1a in the paper
-	Each one of the inputs is a wrapper.DataWrapper object that is
-	the residual of respective interpolation.
-	'''
-	pass
-
-def table1b_analysis(
-	src_bilinear,
-	src_nearest_neighbor,
-	src_bicubic,
-	src_idw,
-	src_global_mlr,
-	src_local_mlr,
-	src_global_nn_lores,
-	src_local_nn_lores,
-	src_global_nn_prep,
-	src_local_nn_prep,
-	src_global_kmeans,
-	src_local_kmeans):
-	'''Computes statistics for table 1b in the paper
-	Each one of the inputs is a wrapper.DataWrapper object that is
-	the residual of respective interpolation.
-	'''
-	pass
 
 def standard_classification_network():
 	model = Sequential()
@@ -635,6 +688,5 @@ def load_datawrappers(denorm_local, load_reg_train, load_clf_train,
 	return {'train_src':train_src,
 		'test_src': test_src,
 		'clf_train_src': clf_train_src}
-
 
 if __name__ == '__main__': main()

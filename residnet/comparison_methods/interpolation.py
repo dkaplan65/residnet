@@ -383,7 +383,10 @@ class ClfInterpWrapper(MLClass):
 
         self.out_len = y.shape[1]
         pred = self.clf.predict(X)
-        ret = np.argmax(pred, axis = 1)
+        if pred.ndim > 1:
+            ret = np.argmax(pred, axis = 1)
+        else:
+            ret = pred
         # get the indices for each regression
         for key,val in self.regs.items():
             ind = get_idxs_of_val(arr = ret, val = key)

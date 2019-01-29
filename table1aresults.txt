@@ -1,0 +1,21 @@
+experiment 0
+nearest neighbor RMSE: 0.21539301702729333
+bilinear RMSE: 0.1455128015328919
+idw RMSE: 0.1510622893560636
+
+
+denorm_local?: True
+experiment 1: MLR: 0.14498274947211126
+experiment 2: NN_LoRes: 0.13649985641398252
+experiment 3: NN_RMSE: 0.7682348093269366
+experiment 4: NN_LR: 0.7243930598643008
+experiment 5: NN-prep: 0.13532160539685373
+experiment 6: NN-KMeans: 0.13854053928595803
+
+denorm_local?: False
+experiment 1: MLR: 0.14434397143798047
+experiment 2: NN_LoRes: 0.13373337428990484
+experiment 3: NN_RMSE: 0.8492026466661139
+experiment 4: NN_LR: 0.7433409519236838
+experiment 5: NN-prep: 0.13276232050154152
+experiment 6: NN-KMeans: 0.14334882431286147
