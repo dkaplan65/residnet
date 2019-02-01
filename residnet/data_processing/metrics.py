@@ -52,7 +52,10 @@ def RMSE(arr, arr2=None):
     return np.sqrt(MSE(arr, arr2))
 
 def MSE(arr, arr2=None):
-    return np.mean(SE(arr, arr2))
+    if arr.ndim == 1:
+        return np.mean(SE(arr, arr2))
+    else:
+        return np.mean(SE(arr, arr2),axis=1)
 
 def SE(arr, arr2=None):
     '''Square Error

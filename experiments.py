@@ -26,42 +26,42 @@ logging.basicConfig(format = constants.LOGGING_FORMAT, level = logging.INFO)
 default_denorm_local = False
 
 def main():
-	table1a()
-	table1b()
+	table1a(0.1)
+	table1b(0.1)
 
-def table1a():
+def table1a(threshold):
 	f = open('table1a_results.txt', 'w')
 	lst = [True,False]
 	f.write('experiment 0\n')
-	f = experiment0(f)
+	f = experiment0(f=f)
 
 	for ele in lst:
 		f.write('\n\ndenorm_local?: {}\n'.format(ele))
 
 		f.write('\nexperiment 1: MLR:')
-		f = performance(f, experiment1(ele)))
+		f = performance(f=f, dw=experiment1(denorm_local=ele))
 
 		f.write('\nexperiment 2: NN_LoRes:')
-		f = performance(f, experiment2(ele)))
+		f = performance(f=f, dw=experiment2(denorm_local=ele))
 
 		f.write('\nexperiment 3: NN_RMSE:')
-		f = experiment3(f,ele))
+		f = experiment3(f=f,denorm_local=ele,threshold=threshold)
 
 		f.write('\nexperiment 4: NN_l1LR:')
-		f = experiment4(f,ele,penalty='l1'))
+		f = experiment4(f=f,denorm_local=ele,penalty='l1',threshold=threshold)
 
 		f.write('\nexperiment 4.5: NN_l2LR:')
-		f = experiment4(f,ele,penalty='l2'))
+		f = experiment4(f=f,denorm_local=ele,penalty='l2',threshold=threshold)
 
 		f.write('\nexperiment 5: NN-prep:')
-		f = performance(f, experiment5(ele)))
+		f = performance(f=f, dw=experiment5(denorm_local=ele,threshold=threshold))
 
 		f.write('\nexperiment 6: NN-KMeans:')
-		f = performance(f, experiment6(ele)))
+		f = performance(f=f, dw=experiment6(denorm_local=ele))
 
 	f.close()
 
-def table1b():
+def table1b(threshold):
 	f = open('table1b_results.txt', 'w')
 	lst = [True,False]
 
@@ -70,51 +70,53 @@ def table1b():
 
 		#load only the high error idxs of the test set
 		nn_rmse_load_path = 'output/models/nn_rmse_denormLocal{}.h5'.format(ele)
-		model = keras.load_model(nn_rmse_load_path)
+		model = keras.models.load_model(nn_rmse_load_path)
 		testing_data = wrappers.DataPreprocessing.load(
 			'output/datapreprocessing/testing_data_denorm' \
 			'Local{}_res6/'.format(ele))
 		test_src = testing_data.make_array(output_key = 'temp')
 		pred = model.predict(test_src.X)
 		pred = transforms.collapse_one_hot(pred)
-		test_idxs = np.where(pred==1)
+		test_idxs = np.where(pred==np.argmax(constants.ONE_HOT_GREATER_THAN))[0]
+
+		print('n start', len(pred))
+		print('n idxs',len(test_idxs))
 
 		f.write('\nexperiment 0')
-		f = experiment0(f,test_idxs=test_idxs)
+		f = experiment0(f=f,test_idxs=test_idxs)
 
 		f.write('\nexperiment 1: MLR:')
-		f = performance(f, experiment1(ele,test_idxs=test_idxs)))
+		f = performance(f=f, dw=experiment1(denorm_local=ele,test_idxs=test_idxs))
 
 		f.write('\nexperiment 2: NN_LoRes:')
-		f = performance(f, experiment2(ele,test_idxs=test_idxs)))
+		f = performance(f=f, dw=experiment2(denorm_local=ele,test_idxs=test_idxs))
 
 		f.write('\nexperiment 3: NN_RMSE:')
-		f = experiment3(f,ele,test_idxs=test_idxs))
+		f = experiment3(f=f,denorm_local=ele,test_idxs=test_idxs,threshold=threshold)
 
 		f.write('\nexperiment 4: NN_l1LR:')
-		f = experiment4(f,ele,penalty='l1',test_idxs=test_idxs))
+		f = experiment4(f=f,denorm_local=ele,penalty='l1',test_idxs=test_idxs,threshold=threshold)
 
 		f.write('\nexperiment 4: NN_l2LR:')
-		f = experiment4(f,ele,penalty='l2',test_idxs=test_idxs))
+		f = experiment4(f=f,denorm_local=ele,penalty='l2',test_idxs=test_idxs,threshold=threshold)
 
 		f.write('\nexperiment 5: NN-prep:')
-		f = performance(f, experiment5(ele,test_idxs=test_idxs)))
+		f = performance(f=f, dw=experiment5(denorm_local=ele,test_idxs=test_idxs,threshold=threshold))
 
 		f.write('\nexperiment 6: NN-KMeans:')
-		f = performance(f, experiment6(ele,test_idxs=test_idxs)))
+		f = performance(f=f, dw=experiment6(denorm_local=ele,test_idxs=test_idxs))
 
 	f.close()
-
 
 def performance(f,dw):
 	'''Writes the mean RMSE, std RMSE, and bias of the datawrapper
 	'''
 	rmse = metrics.RMSE(dw.y_true)
 	f.write('\n\tmean RMSE: {}'.format(np.mean(rmse)))
-	f.write('\n\std RMSE: {}'.format(np.std(rmse)))
-	f.write('\n\tbias: {}'.format(metrics.bias(dw.y_true)))
+	f.write('\n\tstd RMSE: {}'.format(np.std(rmse)))
+	f.write('\n\tbias: {} per sample'.format(metrics.bias(dw.y_true)/len(dw)))
 
-	return dw
+	return f
 
 def experiment0(f,test_idxs=None):
 	'''Experiment 0:
@@ -157,7 +159,7 @@ def experiment0(f,test_idxs=None):
 		cost = metrics.Error,
 		output_size = src.res ** 2)
 	f.write('\nnn performance')
-	f = performance(f,nn)
+	f = performance(f=f,dw=nn)
 	nn.save(nn_save_loc)
 
 	logging.info('Start bilinear')
@@ -167,7 +169,7 @@ def experiment0(f,test_idxs=None):
 		cost = metrics.Error,
 		output_size = src.res ** 2)
 	f.write('\nbilinear performance')
-	f = performance(f,nn)
+	f = performance(f=f,dw=bilinear)
 	bilinear.save(bilinear_save_loc)
 
 	logging.info('Start inverse distance weighting')
@@ -177,7 +179,7 @@ def experiment0(f,test_idxs=None):
 		cost = metrics.Error,
 		output_size = src.res ** 2)
 	f.write('\nidw performance')
-	f = performance(f,nn)
+	f = performance(f=f,dw=idw)
 	idw.save(idw_save_loc)
 
 	# logging.info('Start bicubic')
@@ -371,8 +373,8 @@ def experiment3(f,denorm_local = None, threshold = None,test_idxs=None):
 	f.write('\n\tF1: {}'.format(f1))
 
 	a = collections.Counter(transforms.collapse_one_hot(y_pred))
-	f.write('\n\tn0:', a[0])
-	f.write('\n\tn1:', a[1])
+	f.write('\n\tn0: {}'.format( a[0]))
+	f.write('\n\tn1: {}'.format( a[1]))
 	return f
 
 def experiment4(f,denorm_local = None, threshold = None,penalty='l1',test_idxs=None):
@@ -428,8 +430,8 @@ def experiment4(f,denorm_local = None, threshold = None,penalty='l1',test_idxs=N
 	f.write('\n\tF1: {}'.format(f1))
 
 	a = collections.Counter(transforms.collapse_one_hot(y_pred))
-	f.write('\n\tn0:', a[0])
-	f.write('\n\tn1:', a[1])
+	f.write('\n\tn0: {}'.format( a[0]))
+	f.write('\n\tn1: {}'.format( a[1]))
 
 	return f
 

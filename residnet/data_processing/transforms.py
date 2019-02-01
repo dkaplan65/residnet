@@ -47,6 +47,7 @@ A description about normalization and denormalization:
 import copy
 import logging
 import numpy as np
+import time
 
 import sys
 sys.path.append('..')
@@ -285,7 +286,7 @@ def _InterpolationError(
     '''Description of the function can be seen in `InterpoaltionErrorRegression` or
     `InterpoaltionErrorClassification`.
     '''
-
+    start = time.time()
     if threshold is None:
         # Just the cost
         if output_size is None:
@@ -307,7 +308,8 @@ def _InterpolationError(
     num_samples = len(src)
     for i in range(num_samples):
         if i % 50000 == 0:
-            logging.info('{}/{}'.format(i,num_samples))
+            logging.info('{}/{}, {:0.2f}s'.format(i,num_samples,time.time()-start))
+            start = time.time()
         interpolated_grid = interpolate_grid(X[i,:], src.res, func)
         error = cost(interpolated_grid - src.y_true[i,:])
 
