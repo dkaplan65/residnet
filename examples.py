@@ -18,40 +18,6 @@ from residnet import constants, visualization, util, datasets
 
 logging.basicConfig(format = constants.LOGGING_FORMAT, level = logging.INFO)
 
-def valid(arr):
-    '''Determines if the array is valid.
-    checks if there are any nans or any weird numbers out of range
-    '''
-    return np.all(np.abs(np.ma.filled(arr.astype(int),99999999)) < 1000)
-
-def main():
-
-    # for year in ['2005','2008']:
-    #     raw_data = datasets.HYCOM(filepath2d = 'input_data/hycom/2D_vars/',
-    #         filepath3d = 'input_data/hycom/3D_vars/',
-    #         years = [year], keys = ['temp'])
-    #
-    #     a = raw_data[year]['temp']
-    #
-    #     cnt = 0
-    #
-    #     for t in range(1,a.shape[0]):
-    #         prior = a[t-1]
-    #         # print(t)
-    #         for y_ in range(math.floor(len(raw_data.lat)/6)):
-    #             y = 6 * y_
-    #             # Iterate over longitudes
-    #             for x_ in range(math.floor(len(raw_data.lon)/6)):
-    #                 x = 6 * x_
-    #                 # Check if the subgrid is valid.
-    #                 if valid(prior[y : y + 6,x : x + 6].flatten()) and \
-    #                     not valid(a[t,y : y + 6,x : x + 6].flatten()):
-    #                     cnt += 1
-    #                     # print('\n\nx: {}, y: {}, prior valid'.format(x,y))
-    #                     # print('prior:\n',prior[y : y + 6,x : x + 6])
-    #                     # print('curr:\n',a[t,y : y + 6,x : x + 6])
-    #     print('{} cnt'.format(year),cnt)
-
 def ex1():
     '''Load raw HYCOM data and parse from scratch. Save.
     Here, we are only going to parase 2 days worth of data from 2005.
@@ -275,8 +241,3 @@ def debug_bicubic():
         axis = 1,
         arr = bicubic.y_true)
     print('Mean RMSE bicubic: {}'.format(np.mean(a)))
-
-
-
-
-if __name__ == '__main__': main()

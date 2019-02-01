@@ -34,29 +34,14 @@ DEFAULT_DP_NUM_DAYS = float('inf')
 DEFAULT_DP_OUTPUT_KEY = 'temp'
 DEFAULT_DP_NETCDF_FORMAT = 'NETCDF4_CLASSIC'
 # Set the number of subgrids per day. Dependent on `DEFAULT_DP_RES_IN`
-if DEFAULT_DP_RES_IN == 50:
-	# 2 degree
-	DEFAULT_DP_SPD = 35
-elif DEFAULT_DP_RES_IN == 25:
-	# 1 degree
-	DEFAULT_DP_SPD = 200
-elif DEFAULT_DP_RES_IN == 12:
-	# 1/2 degree
-	DEFAULT_DP_SPD = 950
-elif DEFAULT_DP_RES_IN == 6:
-	# 1/4 degree
-	DEFAULT_DP_SPD = 3900
-elif DEFAULT_DP_RES_IN == 5:
-	# 1/5 degree
-	DEFAULT_DP_SPD = 10000
-elif DEFAULT_DP_RES_IN == 4:
-	# 1/8 degree
-	DEFAULT_DP_SPD = 12000
-elif DEFAULT_DP_RES_IN == 3:
-	# 1/12 degree
-	DEFAULT_DP_SPD = 16300
-else:
-	raise Exception('DEFAULT_DP_RES_IN `{}` not recognized.{}'.format(DEFAULT_DP_RES_IN))
+DEFAULT_DP_SPD = {
+	50: 35, #2 degree
+	25: 200, #1 degree
+	12: 950, #1/2 degree
+	6: 3900, #1/4 degree
+	5: 10000, #1/5 degree
+	4: 12000, #1/8 degree
+	3: 16300} #1/12 degree
 
 # Default values for datasets
 DEFAULT_NC_KEYS = ['temp','sal','u','v','ssh']
@@ -77,7 +62,3 @@ DEFAULT_CLF_CLASS_WEIGHT = 'balanced'
 DEFAULT_VIS_PLOT_REL_PRIM_COLOR = 'black'
 DEFAULT_VIS_PLOT_LINEWIDTH = 1
 DEFAULT_VIS_PRIMARY_LABEL = 'Bilinear'
-
-# Default values for data_processing.transforms
-DEFAULT_TRANS_SIZE_INTERP = 1
-DEFAULT_TRANS_SIZE_CLASS = 2

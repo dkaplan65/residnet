@@ -1,0 +1,101 @@
+
+
+denorm_local?: True
+
+experiment 0
+nn performance
+	mean RMSE: 0.2680066800556949
+	std RMSE: 0.23151111468134444
+	bias: -0.3409881264725631 per sample
+bilinear performance
+	mean RMSE: 0.1741068453019425
+	std RMSE: 0.15711204442585447
+	bias: -0.3409881264725463 per sample
+idw performance
+	mean RMSE: 0.18278668899040093
+	std RMSE: 0.1621040712403303
+	bias: -0.340988126472572 per sample
+experiment 1: MLR:
+	mean RMSE: 0.17338585482614713
+	std RMSE: 0.15647129987752958
+	bias: 0.2790579992477289 per sample
+experiment 2: NN_LoRes:
+	mean RMSE: 0.15648768893365003
+	std RMSE: 0.14229853208275375
+	bias: 0.40028849248139664 per sample
+experiment 3: NN_RMSE:
+	precision: 0.47196483099926295
+	accuracy: 0.6024183776219002
+	F1: 0.43491127848730726
+	n0: 79198
+	n1: 37988
+experiment 4: NN_l1LR:
+	precision: 0.3784511843217938
+	accuracy: 0.38263956445309166
+	F1: 0.5454739646160033
+	n0: 2479
+	n1: 114707
+experiment 4: NN_l2LR:
+	precision: 0.3784511843217938
+	accuracy: 0.38263956445309166
+	F1: 0.5454739646160033
+	n0: 2479
+	n1: 114707
+experiment 5: NN-prep:
+	mean RMSE: 0.1547428423368444
+	std RMSE: 0.13943805588490416
+	bias: 0.4252813612455543 per sample
+experiment 6: NN-KMeans:
+	mean RMSE: 0.16112601144953
+	std RMSE: 0.1475691226681573
+	bias: -0.04397633513970441 per sample
+
+denorm_local?: False
+
+experiment 0
+nn performance
+	mean RMSE: 0.3225275521760448
+	std RMSE: 0.20369970773434712
+	bias: -0.34721576840444873 per sample
+bilinear performance
+	mean RMSE: 0.20605475739209034
+	std RMSE: 0.14498920451509228
+	bias: -0.3472157684044328 per sample
+idw performance
+	mean RMSE: 0.21664304741986912
+	std RMSE: 0.14793971402990094
+	bias: -0.3472157684044564 per sample
+experiment 1: MLR:
+	mean RMSE: 0.20246541716088873
+	std RMSE: 0.1423649281862688
+	bias: -0.03574683037036112 per sample
+experiment 2: NN_LoRes:
+	mean RMSE: 0.18482942303565084
+	std RMSE: 0.12855421357851576
+	bias: -0.21541066428139505 per sample
+experiment 3: NN_RMSE:
+	precision: 0.4268922018348624
+	accuracy: 0.8222848652609297
+	F1: 0.07856690586745463
+	n0: 193040
+	n1: 3488
+experiment 4: NN_l1LR:
+	precision: 0.1902631291765899
+	accuracy: 0.33385064723601726
+	F1: 0.31166960225032203
+	n0: 40749
+	n1: 155779
+experiment 4: NN_l2LR:
+	precision: 0.1901936110277162
+	accuracy: 0.33130648050150613
+	F1: 0.3118339817874292
+	n0: 39977
+	n1: 156551
+experiment 5: NN-prep:
+	mean RMSE: 0.18292133622730342
+	std RMSE: 0.12620148151976432
+	bias: -0.08103848979753442 per sample
+experiment 6: NN-KMeans:
+	mean RMSE: 0.18659973795900925
+	std RMSE: 0.1300010394926872
+	bias: 0.4079422918460036 per sample

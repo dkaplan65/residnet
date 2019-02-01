@@ -37,6 +37,36 @@ class Settings:
     def __init__(self, name = None, res_in = None, savepath = None,
         filepath2d = None, filepath3d = None, years = None, dataset = None,
         denorm_local = None, keys = None, num_days = None):
+        '''Once core arrays (subgrids, locations, norm_data) are built, do not
+        manipulate them as it fill make `loc_to_idx` invalid
+        -------------
+        Args
+        -------------
+        savepath (str)
+            - location to store the object
+        res_in (int)
+            - Number of pixels per subgrid
+        dataset (str)
+            - What dataset to load from
+            - example, 'hycom'
+        filepath2d (str)
+            - Location where the HYCOM netcdf 2D data is stored
+        filepath3d (str)
+            - Location where the HYCOM netcdf 3D data is stored
+        years (list[str]), ex: ['2006', '2007']
+            - A list of years to parse to get the data
+        denorm_local (bool)
+            - If True, normalizes a subgrid by the absolute max value of the
+              difference in the corners of the subgrid.
+            - If False, normalizes a subgrid by the absolute max value over the
+              entire dataset.
+        keys (list[str]), ex: ['ssh','temp', etc.]
+            - A list of the keys to parse from the data
+        num_days (int or None)
+            - Number of days to parse when loading in the data
+        settings (Settings or None)
+            - A settings object that overwrites the previous attributes
+        '''
 
         # Set to default if it was not set during initialization
         if name == None:
@@ -59,7 +89,6 @@ class Settings:
             num_days = DEFAULT_DP_NUM_DAYS
         if savepath == None:
             savepath = 'output/datapreprocessing/{}_denormLocal{}_res{}/'.format(name,denorm_local,res_in)
-
 
         self.savepath = savepath
         self.res_in = res_in
@@ -105,48 +134,14 @@ class DataPreprocessing:
     and regression over.
     '''
 
-    def __init__(self, name = None, res_in = None, savepath = None,
-        filepath2d = None, filepath3d = None, dataset = None, years = None,
-        denorm_local = None, keys = None, num_days = None, settings = None):
-        '''Once core arrays (subgrids, locations, norm_data) are built, do not
-        manipulate them as it fill make `loc_to_idx` invalid
-        -------------
-        Args
-        -------------
-        savepath (str)
-            - location to store the object
-        res_in (int)
-            - Number of pixels per subgrid
-        dataset (str)
-            - What dataset to load from
-            - example, 'hycom'
-        filepath2d (str)
-            - Location where the HYCOM netcdf 2D data is stored
-        filepath3d (str)
-            - Location where the HYCOM netcdf 3D data is stored
-        years (list[str]), ex: ['2006', '2007']
-            - A list of years to parse to get the data
-        denorm_local (bool)
-            - If True, normalizes a subgrid by the absolute max value of the
-              difference in the corners of the subgrid.
-            - If False, normalizes a subgrid by the absolute max value over the
-              entire dataset.
-        keys (list[str]), ex: ['ssh','temp', etc.]
-            - A list of the keys to parse from the data
-        num_days (int or None)
-            - Number of days to parse when loading in the data
-        settings (Settings or None)
-            - A settings object that overwrites the previous attributes
-        '''
-        if settings is None:
-            self.settings = Settings(
-                name = name, res_in = res_in, savepath = savepath, dataset = dataset, years = years,
-                denorm_local = denorm_local, keys = keys, num_days = num_days, filepath2d = filepath2d,
-                filepath3d = filepath3d)
+    def __init__(self, *args, **kwargs):
+
+        if kwargs['settings'] is None:
+            self.settings = Settings(*args, **kwargs)
         else:
-            if not isinstance(settings, Settings):
+            if not isinstance(kwargs['settings'], Settings):
                 raise DataPreProcessingError('settings must be a `Settings` object')
-            self.settings = settings
+            self.settings = kwargs['settings']
         self.subgrids = {}
         self.locations = {} #key -> [year, day, lat_min, lat_max, lon_min, lon_max]
         self.norm_data = {} #key -> [avg, range]
@@ -193,7 +188,7 @@ class DataPreprocessing:
         z = 0
         # Loose upper bound of how many subgrids will be parsed in total
         # Will trim at the end
-        num_subgrids = len(self.settings.years) * 366 * DEFAULT_DP_SPD
+        num_subgrids = len(self.settings.years) * 366 * DEFAULT_DP_SPD[self.res_in]
         # Initialize the arrays so that we are not constantly appending arrays,
         # instead we are just setting values
         for ele in self.settings.keys:

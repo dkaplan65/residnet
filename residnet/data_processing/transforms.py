@@ -291,12 +291,17 @@ def _InterpolationError(
         # Just the cost
         if output_size is None:
             out = np.zeros(
-                shape=(len(src),DEFAULT_TRANS_SIZE_INTERP))
+                shape=(len(src),1))
         else:
             out = np.zeros(shape=(len(src),output_size))
     else:
-        # Two categories for the classification (greater or less than)
-        out = np.zeros(shape=(len(src), DEFAULT_TRANS_SIZE_CLASS))
+        if type(threshold) == float or type(threshold) == int:
+            # Two categories for the classification (greater or less than)
+            out = np.zeros(shape=(len(src), 2))
+            threshold = [threshold]
+        else:
+            # Multiple categories. number of categories is len+1
+            out = np.zeros(shape=(len(src),len(threshold)+1))
 
     X = None
     if use_corners:
@@ -317,10 +322,17 @@ def _InterpolationError(
             out[i,:] = error
 
         else:
-            if error >= threshold:
-                out[i,:] = ONE_HOT_GREATER_THAN.copy()
-            else:
-                out[i,:] = ONE_HOT_LESS_THAN.copy()
+            assigned = False
+            for j in range(len(threshold)):
+                if error < threshold[j]:
+                    a = np.zeros(len(threshold)+1)
+                    a[j] = 1
+                    out[i,:] = a
+                    assigned = True
+            if not assigned:
+                a = np.zeros(len(threshold)+1)
+                a[-1] = 1
+                out[i,:] = a
 
     src.y_true = out
     return src
@@ -470,8 +482,8 @@ def one_hotify(arr):
     '''Transforms a binary array to a one hot array
     Uses
     '''
-
-    ret = np.zeros(shape=(len(arr),2))
+    num_classes = np.max(arr)+1
+    ret = np.zeros(shape=(len(arr),num_classes))
     for i in range(len(arr)):
         ret[i,int(arr[i])] = 1
     return ret
