@@ -26,7 +26,7 @@ logging.basicConfig(format = constants.LOGGING_FORMAT, level = logging.INFO)
 default_denorm_local = False
 
 def main():
-	table2()
+	# table2()
 	generate_preprocess_data.all(res=12)
 	generate_preprocess_data.all(res=4)
 
@@ -34,21 +34,23 @@ def main():
 def table2():
 	f = open('table2_results.txt', 'w')
 	n_clusters = [2,3,4,5]
-	rmse_cutoffs = [[0.11],[0.07,0.15],[0.07,0.1,0.15],[0.07,0.1,0.15,0.2]]
+	rmse_cutoffs = [[0.11],[0.07,0.1],[0.05,0.07,0.1],[0.05,0.07,0.1,0.12]]
 
 	for i in range(4):
 		f.write('\n\n\n\n\nNumber of clusters: {}\n'.format(n_clusters[i]))
 		f.write('RMSE cutoffs: {}\n'.format(rmse_cutoffs[i]))
 		for denorm_local in [True,False]:
 			f.write('\ndenorm_local? {}\n'.format(denorm_local))
+			f.write('NN-RMSE:\n')
 			f = experiment3(f=f, denorm_local=denorm_local, threshold=rmse_cutoffs[i],
 				n_clusters=n_clusters[i])
+
 			dw = experiment5(denorm_local=denorm_local, n_clusters= n_clusters[i])
-			f.write('experiment 5, NN-Prep\n:')
+			f.write('experiment 5, NN-Prep:\n')
 			f = performance(f=f,dw=dw)
 
 			dw = experiment6(denorm_local=denorm_local, n_clusters= n_clusters[i])
-			f.write('experiment 5, NN-KMeans\n:')
+			f.write('experiment 5, NN-KMeans:\n')
 			f = performance(f=f,dw=dw)
 
 	f.close()

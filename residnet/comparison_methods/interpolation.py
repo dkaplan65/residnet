@@ -390,6 +390,12 @@ class ClfInterpWrapper(MLClass):
         # get the indices for each regression
         for key,val in self.regs.items():
             ind = get_idxs_of_val(arr = ret, val = key)
+            if len(ind) < batch_size:
+                batch_size = 2
+                logging.critical('Very small number of samples ({}), setting batch_size'\
+                    ' to 2.'.format(len(ind)))
+            if len(ind) in [0,1,2,3,4,5]:
+                raise Exception('There are only {} examples. Failing'.format(len(ind)))
             self.regs[key].fit(
                 X[ind],
                 y[ind],

@@ -1,0 +1,14 @@
+
+
+
+
+
+Number of clusters: 2
+RMSE cutoffs: [0.11]
+
+denorm_local? True
+NN-RMSE:
+
+	precision: 0.6334415014909665
+	accuracy: 0.7086105745374088
+	F1: 0.2690403389777895

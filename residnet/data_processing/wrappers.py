@@ -136,7 +136,7 @@ class DataPreprocessing:
 
     def __init__(self, *args, **kwargs):
 
-        if kwargs['settings'] is None:
+        if 'settings' not in kwargs:
             self.settings = Settings(*args, **kwargs)
         else:
             if not isinstance(kwargs['settings'], Settings):
@@ -188,7 +188,7 @@ class DataPreprocessing:
         z = 0
         # Loose upper bound of how many subgrids will be parsed in total
         # Will trim at the end
-        num_subgrids = len(self.settings.years) * 366 * DEFAULT_DP_SPD[self.res_in]
+        num_subgrids = len(self.settings.years) * 366 * DEFAULT_DP_SPD[self.settings.res_in]
         # Initialize the arrays so that we are not constantly appending arrays,
         # instead we are just setting values
         for ele in self.settings.keys:
