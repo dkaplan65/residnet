@@ -26,9 +26,7 @@ logging.basicConfig(format = constants.LOGGING_FORMAT, level = logging.INFO)
 default_denorm_local = False
 
 def main():
-	# table2()
-	generate_preprocess_data.all(res=12)
-	generate_preprocess_data.all(res=4)
+	table2()
 
 
 def table2():
