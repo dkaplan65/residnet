@@ -10,6 +10,7 @@ uses default locations and data.
 from keras.models import Sequential
 from keras.layers import Dense, Dropout
 import keras
+from sklearn.metrics import confusion_matrix as cmmm
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -55,7 +56,6 @@ def table2():
 
 def table3(resolution):
 	pass
-
 
 def table1(threshold):
 	_table1a(threshold)

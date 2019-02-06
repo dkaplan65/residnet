@@ -37,7 +37,7 @@ Future versions:
         geometric
 '''
 import numpy as np
-from sklearn.metrics import confusion_matrix as cm
+from sklearn import metrics as skmetrics
 
 from .transforms import collapse_one_hot
 
@@ -107,53 +107,56 @@ def std(arr):
 #############
 
 def confusion_matrix(y_true, y_pred):
-    '''Returns in this order:
-        tn, fp, fn, tp
+    '''confusion matrix
     '''
     if len(y_true.shape) == 2:
         y_true = np.argmax(y_true, axis = 1)
     if len(y_pred.shape) == 2:
         y_pred = np.argmax(y_pred, axis = 1)
-    return cm(y_true, y_pred).ravel()
+
+    return skmetrics.confusion_matrix(y_true, y_pred)
 
 def precision(y_true, y_pred):
     '''Precision.
-    If `cm` (confusion matrix) is specified, use that instead.
     '''
-    tn, fp, fn, tp = confusion_matrix(y_true, y_pred)
-    return tp/(tp + fp)
+    if len(y_true.shape) == 2:
+        y_true = np.argmax(y_true, axis = 1)
+    if len(y_pred.shape) == 2:
+        y_pred = np.argmax(y_pred, axis = 1)
+
+    return skmetrics.precision_score(y_true,y_pred,average='weighted')
 
 def accuracy(y_true, y_pred):
     '''Accuracy
-    If `cm` (confusion matrix) is specified, use that instead.
     '''
-    tn, fp, fn, tp = confusion_matrix(y_true, y_pred)
-    return (tp+tn)/(tp+fp+fn+tn)
+    if len(y_true.shape) == 2:
+        y_true = np.argmax(y_true, axis = 1)
+    if len(y_pred.shape) == 2:
+        y_pred = np.argmax(y_pred, axis = 1)
+
+    return skmetrics.accuracy_score(y_true,y_pred)
 
 def recall(y_true, y_pred):
     '''Reccall.
-    If `cm` (confusion matrix) is specified, use that instead.
     '''
-    tn, fp, fn, tp = confusion_matrix(y_true, y_pred)
-    return tp/(tp+fn)
+    if len(y_true.shape) == 2:
+        y_true = np.argmax(y_true, axis = 1)
+    if len(y_pred.shape) == 2:
+        y_pred = np.argmax(y_pred, axis = 1)
+
+    return skmetrics.recall_score(y_true,y_pred,average='weighted')
 
 def F1(y_true, y_pred):
     ''' F1
-    If `cm` (confusion matrix) is specified, use that instead.
     '''
-    prec = precision(y_true,y_pred)
-    rec = recall(y_true, y_pred)
-    return 2*prec*rec/(prec+rec)
+    if len(y_true.shape) == 2:
+        y_true = np.argmax(y_true, axis = 1)
+    if len(y_pred.shape) == 2:
+        y_pred = np.argmax(y_pred, axis = 1)
 
-def specificity(y_true, y_pred):
-    ''' Specificity.
-    If `cm` (confusion matrix) is specified, use that instead.
-    '''
-    tn, fp, fn, tp = confusion_matrix(y_true, y_pred)
-    return tn/(tn+fp)
+    return skmetrics.f1_score(y_true,y_pred,average='weighted')
 
 def sensitivity(y_true, y_pred):
     '''Alias for recall
-    If `cm` (confusion matrix) is specified, use that instead.
     '''
     return recall(y_true, y_pred)

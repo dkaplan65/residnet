@@ -329,6 +329,7 @@ def _InterpolationError(
                     a[j] = 1
                     out[i,:] = a
                     assigned = True
+                    break
             if not assigned:
                 a = np.zeros(len(threshold)+1)
                 a[-1] = 1
