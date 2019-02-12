@@ -1,0 +1,140 @@
+
+
+
+
+
+Number of clusters: 2
+RMSE cutoffs: [0.11]
+
+denorm_local? True
+NN-RMSE:
+
+	precision: 0.6840206360803514
+	accuracy: 0.7079967974696545
+	F1: 0.6540156834313345experiment 5, NN-Prep:
+	mean RMSE: 0.09849552642732483
+	std RMSE: 0.09277709349845967
+	bias: 0.08377481632669202 per sample
+experiment 5, NN-KMeans:
+	mean RMSE: 0.10013734974587206
+	std RMSE: 0.09589871870362203
+	bias: -0.06770059992859785 per sample
+
+denorm_local? False
+NN-RMSE:
+
+	precision: 0.8166161048684726
+	accuracy: 0.8186709499066341
+	F1: 0.8085106176752711experiment 5, NN-Prep:
+	mean RMSE: 0.09837895061152288
+	std RMSE: 0.08882053279817001
+	bias: 0.06639820151967703 per sample
+experiment 5, NN-KMeans:
+	mean RMSE: 0.10692470185029226
+	std RMSE: 0.09907197596064016
+	bias: 0.050234934650728764 per sample
+
+
+
+
+
+Number of clusters: 3
+RMSE cutoffs: [0.07, 0.1]
+
+denorm_local? True
+NN-RMSE:
+
+	precision: 0.4381904393991973
+	accuracy: 0.5354821305488974
+	F1: 0.47100687583690837experiment 5, NN-Prep:
+	mean RMSE: 0.10002758241364895
+	std RMSE: 0.09515821477113996
+	bias: 0.1462403101685478 per sample
+experiment 5, NN-KMeans:
+	mean RMSE: 0.10124174569431788
+	std RMSE: 0.09733181376369687
+	bias: -0.03084385164553821 per sample
+
+denorm_local? False
+NN-RMSE:
+
+	precision: 0.6125687242031366
+	accuracy: 0.6762870447252914
+	F1: 0.6062897945883621experiment 5, NN-Prep:
+	mean RMSE: 0.09889938534830706
+	std RMSE: 0.08953613272450472
+	bias: -0.16656309671424468 per sample
+experiment 5, NN-KMeans:
+	mean RMSE: 0.09995701140024729
+	std RMSE: 0.09364013141911
+	bias: -0.02180019300864933 per sample
+
+
+
+
+
+Number of clusters: 4
+RMSE cutoffs: [0.05, 0.07, 0.1]
+
+denorm_local? True
+NN-RMSE:
+
+	precision: 0.31816079360231075
+	accuracy: 0.433904500743091
+	F1: 0.3421260062387978experiment 5, NN-Prep:
+	mean RMSE: 0.1004165295903922
+	std RMSE: 0.09584630978150709
+	bias: 0.004545157872592251 per sample
+experiment 5, NN-KMeans:
+	mean RMSE: 0.10186963952122215
+	std RMSE: 0.09814455842757908
+	bias: 0.16889363697349877 per sample
+
+denorm_local? False
+NN-RMSE:
+
+	precision: 0.48479849691589
+	accuracy: 0.5538880178589327
+	F1: 0.4635040024374945experiment 5, NN-Prep:
+	mean RMSE: 0.09869426893437323
+	std RMSE: 0.08896661495270815
+	bias: -0.16892934379529817 per sample
+experiment 5, NN-KMeans:
+	mean RMSE: 0.10153460792454927
+	std RMSE: 0.09320350051556059
+	bias: 0.10904757255019491 per sample
+
+
+
+
+
+Number of clusters: 5
+RMSE cutoffs: [0.05, 0.07, 0.1, 0.12]
+
+denorm_local? True
+NN-RMSE:
+
+	precision: 0.2618712691012921
+	accuracy: 0.3836750149422542
+	F1: 0.27783126048925216experiment 5, NN-Prep:
+	mean RMSE: 0.10031388238993877
+	std RMSE: 0.09595175822906431
+	bias: 0.07402655829787652 per sample
+experiment 5, NN-KMeans:
+	mean RMSE: 0.10317888273084429
+	std RMSE: 0.09841373917209413
+	bias: -0.05156250568988615 per sample
+
+denorm_local? False
+NN-RMSE:
+
+	precision: 0.4245219597888359
+	accuracy: 0.5121499397978743
+	F1: 0.43509342246260435experiment 5, NN-Prep:
+	mean RMSE: 0.10219553373816169
+	std RMSE: 0.09360557766839372
+	bias: 0.39882110263087744 per sample
+experiment 5, NN-KMeans:
+	mean RMSE: 0.10029880450482545
+	std RMSE: 0.09266024279380464
+	bias: 0.07212250665952313 per sample

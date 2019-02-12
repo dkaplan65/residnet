@@ -27,8 +27,12 @@ logging.basicConfig(format = constants.LOGGING_FORMAT, level = logging.INFO)
 default_denorm_local = False
 
 def main():
-	table2()
+	table1(0.115)
+	table3(0.115)
 
+def table1(threshold):
+	_table1a(threshold)
+	_table1b(threshold)
 
 def table2():
 	f = open('table2_results.txt', 'w')
@@ -54,12 +58,67 @@ def table2():
 
 	f.close()
 
-def table3(resolution):
-	pass
+def table3(threshold):
+	'''
+	bilinear
+	NN-RMSE 2 clusters accuracy
+	NN-LoRes
+	NN-Prep
+	NN-KMeans
+	'''
+	f = open('table3_results.txt', 'w')
+	f.write('####################\n')
+	f.write('Resolution 1/2 degree\n')
+	f.write('####################\n')
+	f = _table3_iter(f=f,res=12,threshold=threshold)
+	f.write('####################\n')
+	f.write('Resolution 1/4 degree\n')
+	f.write('####################\n')
+	f = _table3_iter(f=f,res=6,threshold=threshold)
+	f.write('####################\n')
+	f.write('Resolution 1/8 degree\n')
+	f.write('####################\n')
+	f = _table3_iter(f=f,res=4,threshold=threshold)
+	f.close()
 
-def table1(threshold):
-	_table1a(threshold)
-	_table1b(threshold)
+
+
+def _table3_iter(f,res,threshold):
+	'''
+	bilinear
+	NN-RMSE 2 clusters accuracy
+	NN-LoRes
+	NN-Prep
+	NN-KMeans
+	'''
+	data = wrappers.DataPreprocessing.load('output/datapreprocessing/testing_data_'
+		'denormLocalFalse_res{}/'.format(res))
+	logging.info('Make array')
+	src = data.make_array(input_keys = ['temp'], output_key = 'temp', norm_input = False,
+		idxs=test_idxs)
+	# Do bilinear itself
+	logging.info('Start bilinear')
+	bilinear = transforms.InterpolationErrorRegression(
+		src = copy.deepcopy(src),
+		func = interpolation.bilinear,
+		cost = metrics.Error,
+		output_size = src.res ** 2)
+	f.write('bilinear performance\n')
+	f = performance(f=f,dw=bilinear)
+	bilinear.save(bilinear_save_loc)
+
+	for ele in [True,False]:
+		f.write('\n\nDenorm Local? {}\n'.format(ele))
+		f.write('NN_LoRes:\n')
+		f = performance(f=f, dw=experiment2(denorm_local=ele, res=res))
+		f.write('NN_RMSE:\n')
+		f = experiment3(f=f,denorm_local=ele,threshold=threshold, n_clusters=2)
+		f.write('experiment 5: NN-prep:\n')
+		f = performance(f=f, dw=experiment5(denorm_local=ele,threshold=threshold,
+			n_clusters=2))
+		f.write('experiment 6: NN-KMeans:\n')
+		f = performance(f=f, dw=experiment6(denorm_local=ele,n_clusters=2))
+	return f
 
 def _table1a(threshold):
 	f = open('table1a_results.txt', 'w')
@@ -77,7 +136,7 @@ def _table1a(threshold):
 		f = performance(f=f, dw=experiment2(denorm_local=ele))
 
 		f.write('experiment 3: NN_RMSE:\n')
-		f = experiment3(f=f,denorm_local=ele,threshold=threshold)
+		f = experiment3(f=f,denorm_local=ele,threshold=threshold, n_clusters=2)
 
 		f.write('experiment 4: NN_l1LR:\n')
 		f = experiment4(f=f,denorm_local=ele,penalty='l1',threshold=threshold)
@@ -86,14 +145,16 @@ def _table1a(threshold):
 		f = experiment4(f=f,denorm_local=ele,penalty='l2',threshold=threshold)
 
 		f.write('experiment 5: NN-prep:\n')
-		f = performance(f=f, dw=experiment5(denorm_local=ele,threshold=threshold))
+		f = performance(f=f, dw=experiment5(denorm_local=ele,threshold=threshold,
+			n_clusters=2))
 
 		f.write('experiment 6: NN-KMeans:\n')
-		f = performance(f=f, dw=experiment6(denorm_local=ele))
+		f = performance(f=f, dw=experiment6(denorm_local=ele,
+			n_clusters=2))
 
 	f.close()
 
-def _table1b(threshold):
+def _table1b(threshold, res=6):
 	f = open('table1b_results.txt', 'w')
 	lst = [True,False]
 
@@ -105,7 +166,7 @@ def _table1b(threshold):
 		model = keras.models.load_model(nn_rmse_load_path)
 		testing_data = wrappers.DataPreprocessing.load(
 			'output/datapreprocessing/testing_data_denorm' \
-			'Local{}_res6/'.format(ele))
+			'Local{}_res{}/'.format(ele,res))
 		test_src = testing_data.make_array(output_key = 'temp')
 		pred = model.predict(test_src.X)
 		pred = transforms.collapse_one_hot(pred)
@@ -124,7 +185,8 @@ def _table1b(threshold):
 		f = performance(f=f, dw=experiment2(denorm_local=ele,test_idxs=test_idxs))
 
 		f.write('\nexperiment 3: NN_RMSE:')
-		f = experiment3(f=f,denorm_local=ele,test_idxs=test_idxs,threshold=threshold)
+		f = experiment3(f=f,denorm_local=ele,test_idxs=test_idxs,threshold=threshold,
+			n_clusters=2)
 
 		f.write('\nexperiment 4: NN_l1LR:')
 		f = experiment4(f=f,denorm_local=ele,penalty='l1',test_idxs=test_idxs,threshold=threshold)
@@ -133,10 +195,12 @@ def _table1b(threshold):
 		f = experiment4(f=f,denorm_local=ele,penalty='l2',test_idxs=test_idxs,threshold=threshold)
 
 		f.write('\nexperiment 5: NN-prep:')
-		f = performance(f=f, dw=experiment5(denorm_local=ele,test_idxs=test_idxs,threshold=threshold))
+		f = performance(f=f, dw=experiment5(denorm_local=ele,test_idxs=test_idxs,
+			threshold=threshold, n_clusters=2))
 
 		f.write('\nexperiment 6: NN-KMeans:')
-		f = performance(f=f, dw=experiment6(denorm_local=ele,test_idxs=test_idxs))
+		f = performance(f=f, dw=experiment6(denorm_local=ele,test_idxs=test_idxs,
+			n_clusters=2))
 
 	f.close()
 
@@ -150,7 +214,7 @@ def performance(f,dw):
 
 	return f
 
-def experiment0(f,test_idxs=None):
+def experiment0(f,test_idxs=None,res=6):
 	'''Experiment 0:
 
 	These are the non machine-learning comparison methods that we are going to compare the
@@ -174,7 +238,7 @@ def experiment0(f,test_idxs=None):
 	logging.info('Entering experiment 0')
 	logging.info('Load data')
 	data = wrappers.DataPreprocessing.load('output/datapreprocessing/testing_data_'
-		'denormLocalFalse_res6/')
+		'denormLocalFalse_res{}/'.format(res))
 	logging.info('Make array')
 	src = data.make_array(input_keys = ['temp'], output_key = 'temp', norm_input = False,
 		idxs=test_idxs)
@@ -223,7 +287,7 @@ def experiment0(f,test_idxs=None):
 	# bicubic.save(bicubic_save_loc)
 	return f
 
-def experiment1(denorm_local,test_idxs=None):
+def experiment1(denorm_local,test_idxs=None,res=6):
 	'''Experiment 1:
 	Trains MLR on the training data and then runs it on the testing data.
 	Later functions will do the statistical analysis.
@@ -242,7 +306,7 @@ def experiment1(denorm_local,test_idxs=None):
 	logging.info('loading training data')
 	training_data = wrappers.DataPreprocessing.load(
 		'output/datapreprocessing/training_data_denorm' \
-		'Local{}_res6/'.format(denorm_local))
+		'Local{}_res{}/'.format(denorm_local,res))
 	logging.info('make training data')
 	train_src = training_data.make_array(output_key = 'temp')
 	train_src.normalize()
@@ -250,7 +314,7 @@ def experiment1(denorm_local,test_idxs=None):
 	logging.info('loading testing data')
 	testing_data = wrappers.DataPreprocessing.load(
 		'output/datapreprocessing/testing_data_denorm' \
-		'Local{}_res6/'.format(denorm_local))
+		'Local{}_res{}/'.format(denorm_local,res))
 	logging.info('make testing data')
 	test_src = testing_data.make_array(output_key = 'temp',idxs=test_idxs)
 	test_src.normalize()
@@ -274,7 +338,7 @@ def experiment1(denorm_local,test_idxs=None):
 	test_src.save(mlr_error_save_loc)
 	return test_src
 
-def experiment2(denorm_local,test_idxs=None):
+def experiment2(denorm_local,test_idxs=None,res=6):
 	'''Trains NN_LoRes on the training data and then runs it on the testing data
 	'''
 	if denorm_local is None:
@@ -288,7 +352,7 @@ def experiment2(denorm_local,test_idxs=None):
 	logging.info('loading training data')
 	training_data = wrappers.DataPreprocessing.load(
 		'output/datapreprocessing/training_data_denorm' \
-		'Local{}_res6/'.format(denorm_local))
+		'Local{}_res{}/'.format(denorm_local,res))
 	# Split the training_data into both training and validation sets
 	idxs = training_data.split_data_idxs(division_format = 'split',
 		split_dict = {'training': 0.85, 'validation': 0.15}, randomize = True)
@@ -300,7 +364,7 @@ def experiment2(denorm_local,test_idxs=None):
 	logging.info('loading testing data')
 	testing_data = wrappers.DataPreprocessing.load(
 		'output/datapreprocessing/testing_data_denorm' \
-		'Local{}_res6/'.format(denorm_local))
+		'Local{}_res{}/'.format(denorm_local,res))
 	logging.info('make testing data')
 	test_src = testing_data.make_array(output_key = 'temp',idxs=test_idxs)
 	test_src.normalize(output = True)
@@ -330,7 +394,7 @@ def experiment2(denorm_local,test_idxs=None):
 	test_src.save(nn_error_save_loc)
 	return test_src
 
-def experiment3(f,denorm_local, threshold, n_clusters, test_idxs=None):
+def experiment3(f,denorm_local, threshold, n_clusters, test_idxs=None, res=6):
 	'''Trains the classification nn (NN-RMSE) with threshold `threshold`
 	'''
 
@@ -341,7 +405,7 @@ def experiment3(f,denorm_local, threshold, n_clusters, test_idxs=None):
 	logging.info('loading training data')
 	training_data = wrappers.DataPreprocessing.load(
 		'output/datapreprocessing/clf_training_data_denorm' \
-		'Local{}_res6/'.format(denorm_local))
+		'Local{}_res{}/'.format(denorm_local,res))
 	# Split the training_data into both training and validation sets
 	idxs = training_data.split_data_idxs(division_format = 'split',
 		split_dict = {'training': 0.85, 'validation': 0.15}, randomize = True)
@@ -351,7 +415,7 @@ def experiment3(f,denorm_local, threshold, n_clusters, test_idxs=None):
 	logging.info('loading testing data')
 	testing_data = wrappers.DataPreprocessing.load(
 		'output/datapreprocessing/testing_data_denorm' \
-		'Local{}_res6/'.format(denorm_local))
+		'Local{}_res{}/'.format(denorm_local,res))
 	logging.info('make testing data')
 	test_src = testing_data.make_array(output_key = 'temp',idxs=test_idxs)
 
@@ -404,7 +468,7 @@ def experiment3(f,denorm_local, threshold, n_clusters, test_idxs=None):
 	# f.write('\n\tn1: {}'.format( a[1]))
 	return f
 
-def experiment4(f,denorm_local, threshold,penalty='l1',test_idxs=None):
+def experiment4(f,denorm_local, threshold,penalty='l1',test_idxs=None,res=6):
 	'''Classification with Logistic regression
 	'''
 
@@ -412,13 +476,13 @@ def experiment4(f,denorm_local, threshold,penalty='l1',test_idxs=None):
 	logging.info('loading training data')
 	training_data = wrappers.DataPreprocessing.load(
 		'output/datapreprocessing/clf_training_data_denorm' \
-		'Local{}_res6/'.format(denorm_local))
+		'Local{}_res{}/'.format(denorm_local,res))
 	train_src = training_data.make_array(output_key = 'temp')
 
 	logging.info('loading testing data')
 	testing_data = wrappers.DataPreprocessing.load(
 		'output/datapreprocessing/testing_data_denorm' \
-		'Local{}_res6/'.format(denorm_local))
+		'Local{}_res{}/'.format(denorm_local,res))
 	logging.info('make testing data')
 	test_src = testing_data.make_array(output_key = 'temp',idxs=test_idxs)
 
@@ -457,7 +521,7 @@ def experiment4(f,denorm_local, threshold,penalty='l1',test_idxs=None):
 
 	return f
 
-def experiment5(denorm_local, n_clusters, test_idxs=None):
+def experiment5(denorm_local, n_clusters, test_idxs=None,res=6):
 	'''Train and test NN-Prep
 	'''
 
@@ -468,14 +532,14 @@ def experiment5(denorm_local, n_clusters, test_idxs=None):
 	logging.info('loading training data')
 	training_data = wrappers.DataPreprocessing.load(
 		'output/datapreprocessing/training_data_denorm' \
-		'Local{}_res6/'.format(denorm_local))
+		'Local{}_res{}/'.format(denorm_local,res))
 	train_src = training_data.make_array(output_key = 'temp')
 	train_src.normalize(output=True)
 
 	logging.info('loading testing data')
 	testing_data = wrappers.DataPreprocessing.load(
 		'output/datapreprocessing/testing_data_denorm' \
-		'Local{}_res6/'.format(denorm_local))
+		'Local{}_res{}/'.format(denorm_local, res))
 	logging.info('make testing data')
 	test_src = testing_data.make_array(output_key = 'temp',idxs=test_idxs)
 	test_src.normalize(output = True)
@@ -488,7 +552,7 @@ def experiment5(denorm_local, n_clusters, test_idxs=None):
 	a = interpolation.ClfInterpWrapper(
 		clf = keras.models.load_model(nn_clf_model_save_loc),
 		regs = regs,
-		res = 6)
+		res = res)
 
 	# Train
 	a.fit_interp(X=train_src.X, y=train_src.y_true)
@@ -506,7 +570,7 @@ def experiment5(denorm_local, n_clusters, test_idxs=None):
 	test_src.save(nn_error_save_loc)
 	return test_src
 
-def experiment6(denorm_local, n_clusters,test_idxs=None):
+def experiment6(denorm_local, n_clusters,test_idxs=None,res=6):
 	'''Train and test NN-KMeans
 	'''
 
@@ -517,21 +581,21 @@ def experiment6(denorm_local, n_clusters,test_idxs=None):
 	logging.info('loading training data')
 	training_data = wrappers.DataPreprocessing.load(
 		'output/datapreprocessing/training_data_denorm' \
-		'Local{}_res6/'.format(denorm_local))
+		'Local{}_res{}/'.format(denorm_local,res))
 	train_src = training_data.make_array(output_key = 'temp')
 	train_src.normalize(output=True)
 
 	logging.info('loading testing data')
 	testing_data = wrappers.DataPreprocessing.load(
 		'output/datapreprocessing/testing_data_denorm' \
-		'Local{}_res6/'.format(denorm_local))
+		'Local{}_res{}/'.format(denorm_local,res))
 	logging.info('make testing data')
 	test_src = testing_data.make_array(output_key = 'temp',idxs=test_idxs)
 	test_src.normalize(output = True)
 
 	clf_training_data = wrappers.DataPreprocessing.load(
 		'output/datapreprocessing/clf_training_data_denorm' \
-		'Local{}_res6/'.format(denorm_local))
+		'Local{}_res{}/'.format(denorm_local,res))
 	clf_train_src = clf_training_data.make_array(output_key = 'temp')
 
 	kmeans = classification.KMeansWrapper(n_clusters=n_clusters)
@@ -545,7 +609,7 @@ def experiment6(denorm_local, n_clusters,test_idxs=None):
 	a = interpolation.ClfInterpWrapper(
 		clf = kmeans,
 		regs = regs,
-		res = 6)
+		res = res)
 
 	# Train
 	a.fit_interp(X=train_src.X, y=train_src.y_true)
@@ -570,7 +634,7 @@ class generate_preprocess_data:
 	'''Static method wrapper for generating data to use in experiments.
 	'''
 	@classmethod
-	def training(cls, denorm_local = None, res = None):
+	def training(cls, denorm_local=None, res=6):
 		'''Generate data used for training and validation.
 
 		if save_loc is None, it will generate the data from scratch.
@@ -579,42 +643,34 @@ class generate_preprocess_data:
 		logging.info('Generating training data')
 		if denorm_local is None:
 			denorm_local = default_denorm_local
-		if res is None:
-			res = 6
 		return cls._generate_data(years = ['2005','2006'], denorm_local = denorm_local,
 			name = 'training_data', res_in=res)
 
 	@classmethod
-	def testing(cls, denorm_local = None, res=None):
+	def testing(cls, denorm_local = None, res=6):
 		'''Generates data for testing. This is only year 2008.
 		'''
 		logging.info('Generating testing data')
 		if denorm_local is None:
 			denorm_local = default_denorm_local
-		if res is None:
-			res = 6
 		return cls._generate_data(years = ['2008'], denorm_local = denorm_local,
 			name = 'testing_data', res_in=res)
 
 	@classmethod
-	def classifier_training(cls, denorm_local = None, res=None):
+	def classifier_training(cls, denorm_local = None, res=6):
 		'''Generates the data that is used to train the classifiers (year
 		2007).
 		'''
 		logging.info('Generating classifier training data')
 		if denorm_local is None:
 			denorm_local = default_denorm_local
-		if res is None:
-			res = 6
 		return cls._generate_data(years = ['2007'], denorm_local = denorm_local,
 			name = 'clf_training_data', res_in=res)
 
 	@classmethod
-	def all(cls,res=None):
+	def all(cls,res=6):
 		'''Generates all the data used in the entire study.
 		'''
-		if res is None:
-			res = 6
 		cls.training(denorm_local = False, res=res)
 		cls.training(denorm_local = True, res=res)
 		cls.testing(denorm_local = False, res=res)
@@ -660,14 +716,14 @@ def standard_regression_network():
 	return model
 
 def load_datawrappers(denorm_local, load_reg_train, load_clf_train,
-	threshold = None):
+	threshold = None, res=6):
 	'''Loads baseline datawrappers for training
 	'''
 	if load_reg_train:
 		logging.info('Loading regression training data')
 		training_data = wrappers.DataPreprocessing.load(
-			'output/datapreprocessing/training_data_denormLocal{}_res6/'.format(
-			denorm_local))
+			'output/datapreprocessing/training_data_denormLocal{}_res{}/'.format(
+			denorm_local,res))
 		train_src = training_data.make_array(output_key = 'temp')
 		if threshold is not None:
 			train_src.denormalize(output = True)
@@ -683,8 +739,8 @@ def load_datawrappers(denorm_local, load_reg_train, load_clf_train,
 	if load_clf_train:
 		logging.info('Loading classification training data')
 		clf_training_data = wrappers.DataPreprocessing.load(
-			'output/datapreprocessing/clf_training_data_denormLocal{}_res6/'.format(
-			denorm_local))
+			'output/datapreprocessing/clf_training_data_denormLocal{}_res{}/'.format(
+			denorm_local,res))
 		clf_train_src = clf_training_data.make_array(output_key = 'temp')
 		if threshold is not None:
 			clf_train_src.denormalize(output = True)
@@ -700,8 +756,8 @@ def load_datawrappers(denorm_local, load_reg_train, load_clf_train,
 	# Make the testing data
 	logging.info('Loading testing data')
 	testing_data = wrappers.DataPreprocessing.load(
-		'output/datapreprocessing/testing_data_denormLocal{}_res6/'.format(
-		denorm_local))
+		'output/datapreprocessing/testing_data_denormLocal{}_res{}/'.format(
+		denorm_local,res))
 	# test_src = testing_data.make_array(output_key = 'temp')
 	test_src = testing_data.make_array(output_key = 'temp')
 	if threshold is not None:
