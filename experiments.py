@@ -27,8 +27,9 @@ logging.basicConfig(format = constants.LOGGING_FORMAT, level = logging.INFO)
 default_denorm_local = False
 
 def main():
-	table1(0.115)
-	table3(0.115)
+	# table1(0.115)
+	# table3([0.115])
+	table3()
 
 def table1(threshold):
 	_table1a(threshold)
@@ -58,7 +59,7 @@ def table2():
 
 	f.close()
 
-def table3(threshold):
+def table3(threshold=None):
 	'''
 	bilinear
 	NN-RMSE 2 clusters accuracy
@@ -66,7 +67,13 @@ def table3(threshold):
 	NN-Prep
 	NN-KMeans
 	'''
-	f = open('table3_results.txt', 'w')
+	if threshold is None:
+		name = 'table3_results_meanRMSE.txt'
+		threshold=[]
+	else:
+		name = 'table3_results_115.txt'
+
+	f = open(name, 'w')
 	f.write('####################\n')
 	f.write('Resolution 1/2 degree\n')
 	f.write('####################\n')
@@ -83,19 +90,20 @@ def table3(threshold):
 
 
 
-def _table3_iter(f,res,threshold):
+def _table3_iter(f,res,threshold=None):
 	'''
 	bilinear
 	NN-RMSE 2 clusters accuracy
 	NN-LoRes
 	NN-Prep
 	NN-KMeans
+
+	Use mean RMSE as threshold if threshold is None
 	'''
 	data = wrappers.DataPreprocessing.load('output/datapreprocessing/testing_data_'
 		'denormLocalFalse_res{}/'.format(res))
 	logging.info('Make array')
-	src = data.make_array(input_keys = ['temp'], output_key = 'temp', norm_input = False,
-		idxs=test_idxs)
+	src = data.make_array(input_keys = ['temp'], output_key = 'temp', norm_input = False)
 	# Do bilinear itself
 	logging.info('Start bilinear')
 	bilinear = transforms.InterpolationErrorRegression(
@@ -105,19 +113,22 @@ def _table3_iter(f,res,threshold):
 		output_size = src.res ** 2)
 	f.write('bilinear performance\n')
 	f = performance(f=f,dw=bilinear)
-	bilinear.save(bilinear_save_loc)
+
+	if threshold is None:
+		threshold = [np.mean(metrics.RMSE(bilinear.y_true))]
 
 	for ele in [True,False]:
 		f.write('\n\nDenorm Local? {}\n'.format(ele))
-		f.write('NN_LoRes:\n')
+		f.write('\nNN_LoRes:\n')
 		f = performance(f=f, dw=experiment2(denorm_local=ele, res=res))
-		f.write('NN_RMSE:\n')
-		f = experiment3(f=f,denorm_local=ele,threshold=threshold, n_clusters=2)
-		f.write('experiment 5: NN-prep:\n')
-		f = performance(f=f, dw=experiment5(denorm_local=ele,threshold=threshold,
-			n_clusters=2))
-		f.write('experiment 6: NN-KMeans:\n')
-		f = performance(f=f, dw=experiment6(denorm_local=ele,n_clusters=2))
+		f.write('\nNN_RMSE:\n')
+		f = experiment3(f=f,denorm_local=ele,threshold=threshold,res=res)
+		f.write('\nexperiment 5: NN-prep:\n')
+		f = performance(f=f, dw=experiment5(denorm_local=ele,
+			n_clusters=2,res=res))
+		f.write('\nexperiment 6: NN-KMeans:\n')
+		f = performance(f=f, dw=experiment6(denorm_local=ele,
+			n_clusters=2,res=res))
 	return f
 
 def _table1a(threshold):
@@ -145,7 +156,7 @@ def _table1a(threshold):
 		f = experiment4(f=f,denorm_local=ele,penalty='l2',threshold=threshold)
 
 		f.write('experiment 5: NN-prep:\n')
-		f = performance(f=f, dw=experiment5(denorm_local=ele,threshold=threshold,
+		f = performance(f=f, dw=experiment5(denorm_local=ele,
 			n_clusters=2))
 
 		f.write('experiment 6: NN-KMeans:\n')
@@ -196,7 +207,7 @@ def _table1b(threshold, res=6):
 
 		f.write('\nexperiment 5: NN-prep:')
 		f = performance(f=f, dw=experiment5(denorm_local=ele,test_idxs=test_idxs,
-			threshold=threshold, n_clusters=2))
+			n_clusters=2))
 
 		f.write('\nexperiment 6: NN-KMeans:')
 		f = performance(f=f, dw=experiment6(denorm_local=ele,test_idxs=test_idxs,
@@ -370,7 +381,7 @@ def experiment2(denorm_local,test_idxs=None,res=6):
 	test_src.normalize(output = True)
 
 	# Make, train, and save the training performance.
-	model = standard_regression_network()
+	model = standard_regression_network(res)
 	model.fit(
 		train_src.X,
 		train_src.y_true,
@@ -394,9 +405,14 @@ def experiment2(denorm_local,test_idxs=None,res=6):
 	test_src.save(nn_error_save_loc)
 	return test_src
 
-def experiment3(f,denorm_local, threshold, n_clusters, test_idxs=None, res=6):
+def experiment3(f,denorm_local, threshold, test_idxs=None, res=6):
 	'''Trains the classification nn (NN-RMSE) with threshold `threshold`
 	'''
+
+	if type(threshold) != list or type(threshold) != np.ndarray:
+		threshold = [threshold]
+
+	n_clusters = len(threshold) + 1
 
 	nn_error_save_loc = 'output/datawrapper/nn_rmse_denormLocal{}_test_error.pkl'.format(denorm_local)
 	nn_model_save_loc = 'output/models/nn_rmse_denormLocal{}.h5'.format(denorm_local)
@@ -548,7 +564,7 @@ def experiment5(denorm_local, n_clusters, test_idxs=None,res=6):
 	nn_clf_model_save_loc = 'output/models/nn_rmse_denormLocal{}.h5'.format(denorm_local)
 	regs = {}
 	for i in range(n_clusters):
-		regs[int(i)] = standard_regression_network()
+		regs[int(i)] = standard_regression_network(res)
 	a = interpolation.ClfInterpWrapper(
 		clf = keras.models.load_model(nn_clf_model_save_loc),
 		regs = regs,
@@ -604,7 +620,7 @@ def experiment6(denorm_local, n_clusters,test_idxs=None,res=6):
 	# Load classification network and make NN-Prep
 	regs = {}
 	for i in range(n_clusters):
-		regs[int(i)] = standard_regression_network()
+		regs[int(i)] = standard_regression_network(res)
 
 	a = interpolation.ClfInterpWrapper(
 		clf = kmeans,
@@ -703,12 +719,12 @@ def standard_classification_network(n_clusters):
 		metrics=['accuracy'])
 	return model
 
-def standard_regression_network():
+def standard_regression_network(res):
 	model = Sequential()
 	model.add(Dense(units=100, activation='relu',input_dim=20))
 	model.add(Dense(units=100, activation='relu'))
 	model.add(Dropout(0.3))
-	model.add(Dense(units=36,activation='tanh'))
+	model.add(Dense(units=int(res**2),activation='tanh'))
 	model.compile(
 		loss = 'mse',
 		optimizer = 'adam',

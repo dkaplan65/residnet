@@ -1,0 +1,159 @@
+####################
+Resolution 1/2 degree
+####################
+bilinear performance
+	mean RMSE: 0.1932218482112141
+	std RMSE: 0.1623528971558273
+	bias: -1.7241823806361134 per sample
+
+
+Denorm Local? True
+
+NN_LoRes:
+	mean RMSE: 0.18449116360864262
+	std RMSE: 0.15057541811280498
+	bias: 1.7940331206630793 per sample
+
+NN_RMSE:
+
+	precision: 0.6976239786543306
+	accuracy: 0.724094833506783
+	F1: 0.664883021659556
+experiment 5: NN-prep:
+	mean RMSE: 0.09870196077192196
+	std RMSE: 0.09326833773481508
+	bias: 0.033895292357306345 per sample
+
+experiment 6: NN-KMeans:
+	mean RMSE: 0.09991078703716148
+	std RMSE: 0.0945692584108429
+	bias: 0.07311173814518614 per sample
+
+
+Denorm Local? False
+
+NN_LoRes:
+	mean RMSE: 0.18073518133492414
+	std RMSE: 0.13865843898398275
+	bias: 1.1040870304673744 per sample
+
+NN_RMSE:
+
+	precision: 0.8232972188985224
+	accuracy: 0.8264149355719697
+	F1: 0.8154663511857985
+experiment 5: NN-prep:
+	mean RMSE: 0.098127186991492
+	std RMSE: 0.08875212856528135
+	bias: 0.08580522268280939 per sample
+
+experiment 6: NN-KMeans:
+	mean RMSE: 0.10539544758248257
+	std RMSE: 0.09891612200744793
+	bias: -0.09181776299537527 per sample
+####################
+Resolution 1/4 degree
+####################
+bilinear performance
+	mean RMSE: 0.10478021882672134
+	std RMSE: 0.10097069452358529
+	bias: -0.11332922974615904 per sample
+
+
+Denorm Local? True
+
+NN_LoRes:
+	mean RMSE: 0.09884539315622383
+	std RMSE: 0.09384423652341942
+	bias: 0.07597804334216793 per sample
+
+NN_RMSE:
+
+	precision: 0.7043977772152687
+	accuracy: 0.7240799840615955
+	F1: 0.6540618506167376
+experiment 5: NN-prep:
+	mean RMSE: 0.09893743931082907
+	std RMSE: 0.09340444777983464
+	bias: 0.21190651497364701 per sample
+
+experiment 6: NN-KMeans:
+	mean RMSE: 0.09988255573951864
+	std RMSE: 0.09474357574595803
+	bias: 0.20503749790962428 per sample
+
+
+Denorm Local? False
+
+NN_LoRes:
+	mean RMSE: 0.09868456391258641
+	std RMSE: 0.08998558929312232
+	bias: 0.019462472598001095 per sample
+
+NN_RMSE:
+
+	precision: 0.8236482056578418
+	accuracy: 0.82869061304697
+	F1: 0.82147943845931
+experiment 5: NN-prep:
+	mean RMSE: 0.09827593690893463
+	std RMSE: 0.0890986697185475
+	bias: 0.12163369149357255 per sample
+
+experiment 6: NN-KMeans:
+	mean RMSE: 0.09898535286879655
+	std RMSE: 0.09071545479709538
+	bias: 0.12000620890070092 per sample
+####################
+Resolution 1/8 degree
+####################
+bilinear performance
+	mean RMSE: 0.06312176049957263
+	std RMSE: 0.06907672183941538
+	bias: -0.012141175318417286 per sample
+
+
+Denorm Local? True
+
+NN_LoRes:
+	mean RMSE: 0.05889360331491759
+	std RMSE: 0.06378226876544875
+	bias: -0.020319893314323503 per sample
+
+NN_RMSE:
+
+	precision: 0.6990148369952942
+	accuracy: 0.7246294135335368
+	F1: 0.6649947425074102
+experiment 5: NN-prep:
+	mean RMSE: 0.0985458872110098
+	std RMSE: 0.09266904208811665
+	bias: 0.07269141247545063 per sample
+
+experiment 6: NN-KMeans:
+	mean RMSE: 0.09976996948378854
+	std RMSE: 0.09478688542898916
+	bias: 0.11369130894305753 per sample
+
+
+Denorm Local? False
+
+NN_LoRes:
+	mean RMSE: 0.059610170715114395
+	std RMSE: 0.062408329287775254
+	bias: -0.05496191718165474 per sample
+
+NN_RMSE:
+
+	precision: 0.8230707201945805
+	accuracy: 0.8225565547307239
+	F1: 0.8076101976875169
+experiment 5: NN-prep:
+	mean RMSE: 0.09812397708061169
+	std RMSE: 0.08900809941632165
+	bias: -0.03724598018248658 per sample
+
+experiment 6: NN-KMeans:
+	mean RMSE: 0.09951388889563638
+	std RMSE: 0.09101561407542175
+	bias: -0.010026386419151476 per sample

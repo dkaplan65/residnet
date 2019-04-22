@@ -179,10 +179,9 @@ def InterpolationErrorClassification(
     cost (callable function, returns a scalar)
         - Error function. Returns a scalar
 
-    threshold (float)
-        - The threshold value to compare the output to
-        - If val >= threshold, value is ONE_HOT_GREATER_THAN
-        - else, ONE_HOT_LESS_THAN
+    threshold (list or np.ndarray)
+        - Thresholds to cut off for each category.
+        - Assumes the values are sorted
 
     use_corners (bool or None)
         - If True, uses corner indices of y_true instead of src.X
