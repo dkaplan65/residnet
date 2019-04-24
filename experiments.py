@@ -29,7 +29,9 @@ default_denorm_local = False
 def main():
 	# table1(0.115)
 	# table3([0.115])
-	table3()
+	# table3()
+	figure5()
+	# table3()
 
 def table1(threshold):
 	_table1a(threshold)
@@ -68,27 +70,37 @@ def table3(threshold=None):
 	NN-KMeans
 	'''
 	if threshold is None:
-		name = 'table3_results_meanRMSE.txt'
+		name = 'results/table3_results_meanRMSE.txt'
 		threshold=[]
 	else:
-		name = 'table3_results_115.txt'
+		name = 'results/table3_results_115.txt'
 
 	f = open(name, 'w')
 	f.write('####################\n')
 	f.write('Resolution 1/2 degree\n')
 	f.write('####################\n')
+	print('####################\n')
+	print('Resolution 1/2 degree\n')
+	print('####################\n')
 	f = _table3_iter(f=f,res=12,threshold=threshold)
 	f.write('####################\n')
 	f.write('Resolution 1/4 degree\n')
 	f.write('####################\n')
+
+	print('####################\n')
+	print('Resolution 1/4 degree\n')
+	print('####################\n')
+
 	f = _table3_iter(f=f,res=6,threshold=threshold)
 	f.write('####################\n')
 	f.write('Resolution 1/8 degree\n')
 	f.write('####################\n')
+
+	print('####################\n')
+	print('Resolution 1/8 degree\n')
+	print('####################\n')
 	f = _table3_iter(f=f,res=4,threshold=threshold)
 	f.close()
-
-
 
 def _table3_iter(f,res,threshold=None):
 	'''
@@ -117,16 +129,21 @@ def _table3_iter(f,res,threshold=None):
 	if threshold is None:
 		threshold = [np.mean(metrics.RMSE(bilinear.y_true))]
 
-	for ele in [True,False]:
+	# for ele in [True,False]:
+	for ele in [False]:
 		f.write('\n\nDenorm Local? {}\n'.format(ele))
 		f.write('\nNN_LoRes:\n')
+		print('nn_lores')
 		f = performance(f=f, dw=experiment2(denorm_local=ele, res=res))
 		f.write('\nNN_RMSE:\n')
+		print('nn_rmse')
 		f = experiment3(f=f,denorm_local=ele,threshold=threshold,res=res)
 		f.write('\nexperiment 5: NN-prep:\n')
+		print('nn-prep')
 		f = performance(f=f, dw=experiment5(denorm_local=ele,
 			n_clusters=2,res=res))
 		f.write('\nexperiment 6: NN-KMeans:\n')
+		print('nn-kmeans')
 		f = performance(f=f, dw=experiment6(denorm_local=ele,
 			n_clusters=2,res=res))
 	return f
@@ -214,6 +231,91 @@ def _table1b(threshold, res=6):
 			n_clusters=2))
 
 	f.close()
+
+def figure5():
+	nn_lores_output = experiment2(denorm_local=False, res=6)
+
+	data = wrappers.DataPreprocessing.load('output/datapreprocessing/testing_data_'
+		'denormLocalFalse_res6/')
+	src = data.make_array(input_keys = ['temp'], output_key = 'temp', norm_input = False)
+	X_total = src.y_true
+	bilinear_output = transforms.InterpolationErrorRegression(
+		src = copy.deepcopy(src),
+		func = interpolation.bilinear,
+		cost = metrics.Error,
+		output_size = src.res ** 2)
+
+	nn_lores_rmse = metrics.RMSE(nn_lores_output.y_true)
+	bilinear_rmse = metrics.RMSE(bilinear_output.y_true)
+
+	diff = nn_lores_rmse - bilinear_rmse
+	idxs = np.argsort(diff)
+
+	# Plot the input grid for the biggest gain
+	for i in range(5):
+		X = X_total[idxs[i],:].reshape(6,6)
+		fig = plt.figure()
+		ax = fig.add_subplot(1,1,1)
+		im = ax.imshow(X, cmap='ocean')
+		ax.set_title('X')
+		fig.colorbar(im)
+		fig.savefig('results/fig5/improvement/X{}.png'.format(i))
+		plt.close(fig)
+
+		max_col = np.max([
+			np.max(np.absolute(nn_lores_output.y_true[idxs[i],:])),
+			np.max(np.absolute(bilinear_output.y_true[idxs[i],:]))])
+
+		fig = plt.figure()
+		ax = fig.add_subplot(1,1,1)
+		im = ax.imshow(nn_lores_output.y_true[idxs[i],:].reshape(6,6), cmap='seismic',
+			vmin=-max_col, vmax=max_col)
+		ax.set_title('nn')
+		fig.colorbar(im)
+		fig.savefig('results/fig5/improvement/nn{}.png'.format(i))
+		plt.close(fig)
+
+		fig = plt.figure()
+		ax = fig.add_subplot(1,1,1)
+		im = ax.imshow(bilinear_output.y_true[idxs[i],:].reshape(6,6), cmap='seismic',
+			vmin=-max_col, vmax=max_col)
+		ax.set_title('bilinear')
+		fig.colorbar(im)
+		fig.savefig('results/fig5/improvement/bilinear{}.png'.format(i))
+		plt.close(fig)
+
+	# Plot the input grid for the biggest loss
+	for i in range(1,6):
+		X = X_total[idxs[-i],:].reshape(6,6)
+		fig = plt.figure()
+		ax = fig.add_subplot(1,1,1)
+		im = ax.imshow(X, cmap='ocean')
+		ax.set_title('X')
+		fig.colorbar(im)
+		fig.savefig('results/fig5/worse/X{}.png'.format(i))
+		plt.close(fig)
+
+		max_col = np.max([
+			np.max(np.absolute(nn_lores_output.y_true[idxs[-i],:])),
+			np.max(np.absolute(bilinear_output.y_true[idxs[-i],:]))])
+
+		fig = plt.figure()
+		ax = fig.add_subplot(1,1,1)
+		im = ax.imshow(nn_lores_output.y_true[idxs[-i],:].reshape(6,6), cmap='seismic',
+			vmin=-max_col, vmax=max_col)
+		ax.set_title('nn')
+		fig.colorbar(im)
+		fig.savefig('results/fig5/worse/nn{}.png'.format(i))
+		plt.close(fig)
+
+		fig = plt.figure()
+		ax = fig.add_subplot(1,1,1)
+		im = ax.imshow(bilinear_output.y_true[idxs[-i],:].reshape(6,6), cmap='seismic',
+			vmin=-max_col, vmax=max_col)
+		ax.set_title('bilinear')
+		fig.colorbar(im)
+		fig.savefig('results/fig5/worse/bilinear{}.png'.format(i))
+		plt.close(fig)
 
 def performance(f,dw):
 	'''Writes the mean RMSE, std RMSE, and bias of the datawrapper
@@ -366,7 +468,7 @@ def experiment2(denorm_local,test_idxs=None,res=6):
 		'Local{}_res{}/'.format(denorm_local,res))
 	# Split the training_data into both training and validation sets
 	idxs = training_data.split_data_idxs(division_format = 'split',
-		split_dict = {'training': 0.85, 'validation': 0.15}, randomize = True)
+		split_dict = {'training': 0.45, 'validation': 0.15}, randomize = True)
 	train_src = training_data.make_array(output_key = 'temp', idxs = idxs['training'])
 	train_src.normalize(output=True)
 	val_src = training_data.make_array(output_key = 'temp', idxs = idxs['validation'])
@@ -464,7 +566,7 @@ def experiment3(f,denorm_local, threshold, test_idxs=None, res=6):
 		train_src.X,
 		train_src.y_true,
 		validation_data = (val_src.X, val_src.y_true),
-		epochs = 10,
+		epochs = 2,
 		batch_size = 50)
 
 	model.save(nn_model_save_loc)
@@ -571,7 +673,7 @@ def experiment5(denorm_local, n_clusters, test_idxs=None,res=6):
 		res = res)
 
 	# Train
-	a.fit_interp(X=train_src.X, y=train_src.y_true)
+	a.fit_interp(X=train_src.X, y=train_src.y_true, epochs=2)
 	y_pred = a.predict(test_src.X)
 
 	# Denormalize
@@ -628,7 +730,7 @@ def experiment6(denorm_local, n_clusters,test_idxs=None,res=6):
 		res = res)
 
 	# Train
-	a.fit_interp(X=train_src.X, y=train_src.y_true)
+	a.fit_interp(X=train_src.X, y=train_src.y_true, epochs=2)
 	y_pred = a.predict(test_src.X)
 
 	# Denormalize

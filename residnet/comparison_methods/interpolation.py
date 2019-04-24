@@ -291,7 +291,7 @@ class ClfInterpWrapper(MLClass):
             self.ml = False
             self.res = res
 
-        def fit(self, **kwargs):
+        def fit(self, *args, **kwargs):
             '''Do nothing because there is no training involved
             '''
             return
