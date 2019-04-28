@@ -57,6 +57,14 @@ def MSE(arr, arr2=None):
     else:
         return np.mean(SE(arr, arr2),axis=1)
 
+def ME(arr, arr2=None):
+    if arr2 is not None:
+        arr = arr - arr2
+    if arr.ndim == 1:
+        return np.mean(arr)
+    else:
+        return np.mean(arr, axis=1)
+
 def SE(arr, arr2=None):
     '''Square Error
     '''
@@ -90,10 +98,7 @@ def MAE(arr, arr2=None):
         return np.mean(np.absolute(arr - arr2))
 
 def bias(arr, arr2=None):
-    if arr2 is None:
-        return np.sum(arr)
-    else:
-        return np.sum(arr - arr2)
+    return np.sum(ME(arr=arr, arr2=arr2))
 
 def variance(arr):
     return np.var(arr)

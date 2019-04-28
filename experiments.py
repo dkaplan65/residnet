@@ -27,10 +27,10 @@ logging.basicConfig(format = constants.LOGGING_FORMAT, level = logging.INFO)
 default_denorm_local = False
 
 def main():
-	# table1(0.115)
+	table1(0.115)
 	# table3([0.115])
 	# table3()
-	figure5()
+	# figure5()
 	# table3()
 
 def table1(threshold):
@@ -164,7 +164,7 @@ def _table1a(threshold):
 		f = performance(f=f, dw=experiment2(denorm_local=ele))
 
 		f.write('experiment 3: NN_RMSE:\n')
-		f = experiment3(f=f,denorm_local=ele,threshold=threshold, n_clusters=2)
+		f = experiment3(f=f,denorm_local=ele,threshold=threshold)
 
 		f.write('experiment 4: NN_l1LR:\n')
 		f = experiment4(f=f,denorm_local=ele,penalty='l1',threshold=threshold)
@@ -213,8 +213,7 @@ def _table1b(threshold, res=6):
 		f = performance(f=f, dw=experiment2(denorm_local=ele,test_idxs=test_idxs))
 
 		f.write('\nexperiment 3: NN_RMSE:')
-		f = experiment3(f=f,denorm_local=ele,test_idxs=test_idxs,threshold=threshold,
-			n_clusters=2)
+		f = experiment3(f=f,denorm_local=ele,test_idxs=test_idxs,threshold=threshold)
 
 		f.write('\nexperiment 4: NN_l1LR:')
 		f = experiment4(f=f,denorm_local=ele,penalty='l1',test_idxs=test_idxs,threshold=threshold)
@@ -248,82 +247,100 @@ def figure5():
 	nn_lores_rmse = metrics.RMSE(nn_lores_output.y_true)
 	bilinear_rmse = metrics.RMSE(bilinear_output.y_true)
 
-	diff = nn_lores_rmse - bilinear_rmse
+	diff = bilinear_rmse - nn_lores_rmse
 	idxs = np.argsort(diff)
 
 	# Plot the input grid for the biggest gain
-	for i in range(5):
-		X = X_total[idxs[i],:].reshape(6,6)
-		fig = plt.figure()
-		ax = fig.add_subplot(1,1,1)
-		im = ax.imshow(X, cmap='ocean')
-		ax.set_title('X')
-		fig.colorbar(im)
-		fig.savefig('results/fig5/improvement/X{}.png'.format(i))
-		plt.close(fig)
+	# for i in range(5):
+	# 	X = X_total[idxs[i],:].reshape(6,6)
+	# 	fig = plt.figure()
+	# 	ax = fig.add_subplot(1,1,1)
+	# 	im = ax.imshow(X, cmap='ocean')
+	# 	ax.set_title('X')
+	# 	fig.colorbar(im)
+	# 	fig.savefig('results/fig5/improvement/X{}.png'.format(i))
+	# 	plt.close(fig)
+	#
+	# 	max_col = np.max([
+	# 		np.max(np.absolute(nn_lores_output.y_true[idxs[i],:])),
+	# 		np.max(np.absolute(bilinear_output.y_true[idxs[i],:]))])
+	#
+	# 	fig = plt.figure()
+	# 	ax = fig.add_subplot(1,1,1)
+	# 	im = ax.imshow(nn_lores_output.y_true[idxs[i],:].reshape(6,6), cmap='seismic',
+	# 		vmin=-max_col, vmax=max_col)
+	# 	ax.set_title('nn')
+	# 	fig.colorbar(im)
+	# 	fig.savefig('results/fig5/improvement/nn{}.png'.format(i))
+	# 	plt.close(fig)
+	#
+	# 	fig = plt.figure()
+	# 	ax = fig.add_subplot(1,1,1)
+	# 	im = ax.imshow(bilinear_output.y_true[idxs[i],:].reshape(6,6), cmap='seismic',
+	# 		vmin=-max_col, vmax=max_col)
+	# 	ax.set_title('bilinear')
+	# 	fig.colorbar(im)
+	# 	fig.savefig('results/fig5/improvement/bilinear{}.png'.format(i))
+	# 	plt.close(fig)
+	#
+	# # Plot the input grid for the biggest loss
+	# for i in range(1,6):
+	# 	X = X_total[idxs[-i],:].reshape(6,6)
+	# 	fig = plt.figure()
+	# 	ax = fig.add_subplot(1,1,1)
+	# 	im = ax.imshow(X, cmap='ocean')
+	# 	ax.set_title('X')
+	# 	fig.colorbar(im)
+	# 	fig.savefig('results/fig5/worse/X{}.png'.format(i))
+	# 	plt.close(fig)
+	#
+	# 	max_col = np.max([
+	# 		np.max(np.absolute(nn_lores_output.y_true[idxs[-i],:])),
+	# 		np.max(np.absolute(bilinear_output.y_true[idxs[-i],:]))])
+	#
+	# 	fig = plt.figure()
+	# 	ax = fig.add_subplot(1,1,1)
+	# 	im = ax.imshow(nn_lores_output.y_true[idxs[-i],:].reshape(6,6), cmap='seismic',
+	# 		vmin=-max_col, vmax=max_col)
+	# 	ax.set_title('nn')
+	# 	fig.colorbar(im)
+	# 	fig.savefig('results/fig5/worse/nn{}.png'.format(i))
+	# 	plt.close(fig)
+	#
+	# 	fig = plt.figure()
+	# 	ax = fig.add_subplot(1,1,1)
+	# 	im = ax.imshow(bilinear_output.y_true[idxs[-i],:].reshape(6,6), cmap='seismic',
+	# 		vmin=-max_col, vmax=max_col)
+	# 	ax.set_title('bilinear')
+	# 	fig.colorbar(im)
+	# 	fig.savefig('results/fig5/worse/bilinear{}.png'.format(i))
+	# 	plt.close(fig)
 
-		max_col = np.max([
-			np.max(np.absolute(nn_lores_output.y_true[idxs[i],:])),
-			np.max(np.absolute(bilinear_output.y_true[idxs[i],:]))])
+	diff = np.sort(diff)
+	xs = np.arange(len(diff))
+	fig = plt.figure()
+	ax = fig.add_subplot(1,1,1)
+	ax.plot(xs, np.zeros(len(xs)), color='red')
+	ax.plot(xs, diff, color='blue')
+	fig.savefig('results/fig5/diffs.png')
+	plt.close()
 
-		fig = plt.figure()
-		ax = fig.add_subplot(1,1,1)
-		im = ax.imshow(nn_lores_output.y_true[idxs[i],:].reshape(6,6), cmap='seismic',
-			vmin=-max_col, vmax=max_col)
-		ax.set_title('nn')
-		fig.colorbar(im)
-		fig.savefig('results/fig5/improvement/nn{}.png'.format(i))
-		plt.close(fig)
-
-		fig = plt.figure()
-		ax = fig.add_subplot(1,1,1)
-		im = ax.imshow(bilinear_output.y_true[idxs[i],:].reshape(6,6), cmap='seismic',
-			vmin=-max_col, vmax=max_col)
-		ax.set_title('bilinear')
-		fig.colorbar(im)
-		fig.savefig('results/fig5/improvement/bilinear{}.png'.format(i))
-		plt.close(fig)
-
-	# Plot the input grid for the biggest loss
-	for i in range(1,6):
-		X = X_total[idxs[-i],:].reshape(6,6)
-		fig = plt.figure()
-		ax = fig.add_subplot(1,1,1)
-		im = ax.imshow(X, cmap='ocean')
-		ax.set_title('X')
-		fig.colorbar(im)
-		fig.savefig('results/fig5/worse/X{}.png'.format(i))
-		plt.close(fig)
-
-		max_col = np.max([
-			np.max(np.absolute(nn_lores_output.y_true[idxs[-i],:])),
-			np.max(np.absolute(bilinear_output.y_true[idxs[-i],:]))])
-
-		fig = plt.figure()
-		ax = fig.add_subplot(1,1,1)
-		im = ax.imshow(nn_lores_output.y_true[idxs[-i],:].reshape(6,6), cmap='seismic',
-			vmin=-max_col, vmax=max_col)
-		ax.set_title('nn')
-		fig.colorbar(im)
-		fig.savefig('results/fig5/worse/nn{}.png'.format(i))
-		plt.close(fig)
-
-		fig = plt.figure()
-		ax = fig.add_subplot(1,1,1)
-		im = ax.imshow(bilinear_output.y_true[idxs[-i],:].reshape(6,6), cmap='seismic',
-			vmin=-max_col, vmax=max_col)
-		ax.set_title('bilinear')
-		fig.colorbar(im)
-		fig.savefig('results/fig5/worse/bilinear{}.png'.format(i))
-		plt.close(fig)
+	print('num bettered', np.sum(diff > 0)/len(diff))
+	print('mean improve', np.mean(diff))
 
 def performance(f,dw):
 	'''Writes the mean RMSE, std RMSE, and bias of the datawrapper
 	'''
+	print('\n\n\n\n')
 	rmse = metrics.RMSE(dw.y_true)
 	f.write('\tmean RMSE: {}\n'.format(np.mean(rmse)))
+	print('\tmean RMSE: {}\n'.format(np.mean(rmse)))
 	f.write('\tstd RMSE: {}\n'.format(np.std(rmse)))
-	f.write('\tbias: {} per sample\n'.format(metrics.bias(dw.y_true)/len(dw)))
+	print('\tstd RMSE: {}\n'.format(np.std(rmse)))
+	f.write('\tbias: {} (total over all grids)\n'.format(metrics.bias(dw.y_true)))
+	print('\tbias: {} (total over all grids)\n'.format(metrics.bias(dw.y_true)))
+	print('n_samples', len(dw.y_true))
+	print('\n\n\n\n')
 
 	return f
 
@@ -468,7 +485,7 @@ def experiment2(denorm_local,test_idxs=None,res=6):
 		'Local{}_res{}/'.format(denorm_local,res))
 	# Split the training_data into both training and validation sets
 	idxs = training_data.split_data_idxs(division_format = 'split',
-		split_dict = {'training': 0.45, 'validation': 0.15}, randomize = True)
+		split_dict = {'training': 0.85, 'validation': 0.15}, randomize = True)
 	train_src = training_data.make_array(output_key = 'temp', idxs = idxs['training'])
 	train_src.normalize(output=True)
 	val_src = training_data.make_array(output_key = 'temp', idxs = idxs['validation'])
